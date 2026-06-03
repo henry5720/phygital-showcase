@@ -1,7 +1,7 @@
 # 植酌 Fizz't WebAR 風味互動體驗 — 系統設計文件
 
 **日期**：2026-06-03  
-**狀態**：待確認
+**狀態**：確認（2026-06-03 修訂）
 
 ---
 
@@ -22,7 +22,8 @@
 | 路由 | React Router v7 | SPA 路由，輕量 |
 | 樣式 | Tailwind CSS v4 | Design token via CSS vars |
 | 動畫 | Framer Motion | 頁面轉場、Quiz 動畫 |
-| WebAR | MindAR.js（mindar-image） | 免費、Image Target、文件穩定 |
+| 捲動動畫 | GSAP ScrollTrigger | 產品介紹頁電影級滾輪動畫 |
+| WebAR | MindAR.js（mindar-image）+ Three.js | Image Target + 3D model 渲染（官方支援組合） |
 | 部署 | Cloudflare Pages | 免費 CDN、自訂 domain |
 | 分析 | GA4 via gtag（選用） | 純瀏覽器 SDK，無後端 |
 
@@ -35,7 +36,8 @@
 
 ```
 /                   → Landing Page（三個 CTA 入口）
-/ar                 → WebAR 引導頁 → AR Scanner（七個流程）
+/ar                 → WebAR 引導頁 → AR Scanner
+/product            → 產品介紹頁（GSAP ScrollTrigger 電影級捲動）
 /quiz               → 互動測驗（N 題 → 結果頁）
 /quiz/result/:type  → 測驗結果（清新探索型 / 微醺儀式型 / 層次品味型）
 ```
@@ -57,37 +59,49 @@ src/
 │   ├── Landing.tsx          # 三個 CTA 按鈕
 │   ├── ArGuide.tsx          # WebAR 引導頁（說明 + 開始按鈕）
 │   ├── ArScanner.tsx        # MindAR canvas 容器（隔離 React DOM）
+│   ├── Product.tsx          # 產品介紹頁（GSAP ScrollTrigger）
 │   ├── Quiz.tsx             # 測驗主流程
 │   └── QuizResult.tsx       # 結果展示 + LINE CTA
 ├── components/
-│   ├── MindArCanvas.tsx     # useRef + useEffect 掛載 MindAR，無 React 管理 AR DOM
-│   ├── VideoOverlay.tsx     # AR 場景內的影片播放（三階段）
+│   ├── MindArCanvas.tsx     # useRef + useEffect 掛載 MindAR + Three.js，AR DOM 完全隔離
+│   ├── ArHotspot.tsx        # A/B/C 熱點按鈕（Three.js Sprite，billboarded）
+│   ├── VideoOverlay.tsx     # 2D HTML overlay 影片（position: fixed，非 3D 貼圖）
 │   ├── QuizCard.tsx         # 單題問答卡片
 │   └── ResultCard.tsx       # 風味人格結果卡
 └── router.tsx               # React Router 設定
 ```
 
-### MindAR 整合策略（關鍵）
+### MindAR + Three.js 整合策略（關鍵）
 
-MindAR 直接操作 DOM（透過 A-Frame 或其 vanilla API），**不讓 React reconciler 碰 AR canvas 的子節點**：
+使用 MindAR 的 **Three.js API**（`mindar-image-three`），不走 A-Frame，避免全域 DOM 污染。React 只管理 container `<div>`，Three.js scene 完全在 `useEffect` 內建立：
 
 ```tsx
 // MindArCanvas.tsx
-export function MindArCanvas({ onTracked, onLost }) {
+export function MindArCanvas({ onHotspotClick, onProductPageClick }) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // 在 effect 內初始化 MindAR，React 只管理 container div
-    const mindarThree = new MindARThree({ container: containerRef.current, ... })
-    // 事件回呼傳回 React 層
+    const mindarThree = new MindARThree({ container: containerRef.current })
+    const { renderer, scene, camera } = mindarThree
+
+    // 載入 .glb 瓶身 model
+    const loader = new GLTFLoader()
+    loader.load('/assets/bottle.glb', (gltf) => {
+      anchor.group.add(gltf.scene)
+    })
+
+    // A/B/C 熱點：Three.js Sprite（永遠面向鏡頭）
+    // Raycaster 偵測觸碰 → 回呼 onHotspotClick(type)
+
+    mindarThree.start()
     return () => mindarThree.stop()
   }, [])
 
-  return <div ref={containerRef} style={{ width: '100%', height: '100vh' }} />
+  return <div ref={containerRef} className="w-full h-dvh" />
 }
 ```
 
-Three.js renderer（MindAR 的 vanilla API，不走 A-Frame）避免 A-Frame 的全域 DOM 污染。
+影片播放為 **2D HTML overlay**（React 管理），MindAR 的 `onTargetFound` / `onTargetLost` 事件透過 callback props 通知 React 層顯示/隱藏 overlay。
 
 ---
 
@@ -145,17 +159,27 @@ document.documentElement.style.setProperty('--color-bg', config.theme.background
 
 ---
 
-## 6. WebAR 七個流程對應實作
+## 6. WebAR 互動流程（修訂）
 
-| 流程 | 實作位置 | 說明 |
-|------|---------|------|
-| 0. 引導頁 | `ArGuide.tsx` | 說明掃描方式、開啟相機說明、「開始體驗」按鈕 |
-| 1. 掃描 Logo | `MindArCanvas` | MindAR image target，偵測到 Logo 觸發 `onTracked` |
-| 2. 品牌故事（stage1） | `VideoOverlay` | 追蹤成功後播放 20s 影片 |
-| 3. 產品特色（stage2） | `VideoOverlay` | A/B/C 三個切換點（點擊 HUD icon 切換） |
-| 4. 五感互動 | `VideoOverlay` | 同 stage2，五感 icon 切換內容 |
-| 5. 調飲示範（stage3） | `VideoOverlay` | 5 步驟動畫 |
-| 6. LINE CTA | `ArScanner.tsx` | 影片結束後顯示 2D 懸浮按鈕，redirect 至 LINE OA |
+```
+掃描 Fizz't Logo
+  └─► 3D 瓶身 .glb 浮現（錨定 logo 平面，自動旋轉）
+        ├─► 熱點 A「產品是什麼」→ VideoOverlay 播放 stage1 影片（8-12s）
+        ├─► 熱點 B「產品特色」 → VideoOverlay 播放 stage2 影片
+        ├─► 熱點 C「差異化」  → VideoOverlay 播放 stage3 影片
+        ├─► 五感 icon（視覺/聽覺/嗅覺/味覺/觸覺）→ 切換 2D 感官文案 overlay
+        └─► 「了解更多」按鈕 → 退出 AR → navigate('/product')
+```
+
+| 元件 | 職責 |
+|------|------|
+| `ArGuide.tsx` | 引導頁：說明掃描方式、相機權限提示、「開始體驗」按鈕 |
+| `MindArCanvas.tsx` | Three.js scene：載入 .glb、熱點 Sprite、Raycaster 觸碰偵測 |
+| `ArScanner.tsx` | 父層：管理 AR 狀態（idle / tracking / hotspot_active），控制 overlay 顯示 |
+| `VideoOverlay.tsx` | 2D fixed overlay：播放指定影片，播完後回到 AR 狀態 |
+| `SensoryOverlay.tsx` | 2D fixed overlay：五感文案切換 |
+
+**素材需求**：`/assets/bottle.glb`（客戶提供）、`/assets/fizzt-logo.mind`（需上傳 Logo 至 MindAR Compiler 產生）
 
 ---
 
@@ -206,7 +230,26 @@ document.documentElement.style.setProperty('--color-bg', config.theme.background
 
 ---
 
-## 11. 不在範疇內
+## 11. 產品介紹頁（/product）
+
+GSAP ScrollTrigger 電影級捲動體驗，作為 AR「了解更多」及 Landing 的獨立入口。
+
+**捲動分鏡規劃（初版）**：
+
+| 分鏡 | 動畫 | 內容 |
+|------|------|------|
+| 1 | 瓶身從黑幕淡入 + scale up | Hero：品牌 slogan |
+| 2 | 橫向 pin + 文字逐行進場 | 品牌起源故事 |
+| 3 | 粒子爆炸效果（CSS） | 成分特色：鳳梨發酵 |
+| 4 | 4 格水平滑入 | 產品特色（果香/清爽/層次/搭配） |
+| 5 | 瓶身旋轉（CSS 3D transform） | 差異化 vs 一般飲品 |
+| 6 | 全屏 CTA | 加入 LINE OA + 開始測驗 |
+
+實作：GSAP `ScrollTrigger.pin` + `gsap.timeline`，搭配 Tailwind 定義佈局，GSAP 只控制動畫時序。
+
+---
+
+## 12. 不在範疇內
 
 - LINE 自動貼標（需後端 Messaging API）
 - 多品牌動態切換（當前只實作 Fizz't）
