@@ -1,0 +1,103 @@
+{
+  "theme": {
+    "primaryColor": "#D4AF37",
+    "backgroundColor": "#051129",
+    "textColor": "#FFFFFF"
+  },
+  "brand": {
+    "name": "植酌 Fizz't",
+    "subtitle": "鳳梨發酵酵素飲",
+    "heroImage": "/assets/hero.png",
+    "logoMindFile": "/assets/fizzt-logo.mind"
+  },
+  "ar": {
+    "model": "/assets/bottle.glb",
+    "videos": {
+      "stageA": "/assets/video-stage-a.mp4",
+      "stageB": "/assets/video-stage-b.mp4",
+      "stageC": "/assets/video-stage-c.mp4"
+    },
+    "ctaText": "了解更多"
+  },
+  "quiz": {
+    "title": "找出你的植酌風味人格",
+    "questions": [
+      {
+        "id": "q1",
+        "text": "你通常在什麼時候最需要一杯飲料？",
+        "options": [
+          { "text": "早晨清醒時", "scores": { "fresh": 2, "ritual": 0, "layered": 0 } },
+          { "text": "下午疲憊時", "scores": { "fresh": 1, "ritual": 0, "layered": 1 } },
+          { "text": "餐桌佐餐時", "scores": { "fresh": 0, "ritual": 1, "layered": 1 } },
+          { "text": "聚會社交時", "scores": { "fresh": 0, "ritual": 2, "layered": 0 } }
+        ]
+      },
+      {
+        "id": "q2",
+        "text": "你偏好的飲料風味是？",
+        "options": [
+          { "text": "清爽果香", "scores": { "fresh": 2, "ritual": 0, "layered": 0 } },
+          { "text": "微甜順口", "scores": { "fresh": 1, "ritual": 1, "layered": 0 } },
+          { "text": "層次豐富", "scores": { "fresh": 0, "ritual": 0, "layered": 2 } },
+          { "text": "茶感香氣", "scores": { "fresh": 0, "ritual": 1, "layered": 1 } }
+        ]
+      },
+      {
+        "id": "q3",
+        "text": "對你來說，喝飲料是一種？",
+        "options": [
+          { "text": "補充水分的日常", "scores": { "fresh": 2, "ritual": 0, "layered": 0 } },
+          { "text": "享受當下的片刻", "scores": { "fresh": 0, "ritual": 2, "layered": 0 } },
+          { "text": "品味生活的儀式", "scores": { "fresh": 0, "ritual": 1, "layered": 1 } },
+          { "text": "探索風味的旅程", "scores": { "fresh": 0, "ritual": 0, "layered": 2 } }
+        ]
+      },
+      {
+        "id": "q4",
+        "text": "你最常在哪裡享用飲料？",
+        "options": [
+          { "text": "通勤路上隨行喝", "scores": { "fresh": 2, "ritual": 0, "layered": 0 } },
+          { "text": "咖啡廳輕鬆坐著", "scores": { "fresh": 0, "ritual": 1, "layered": 1 } },
+          { "text": "精緻餐廳用餐中", "scores": { "fresh": 0, "ritual": 0, "layered": 2 } },
+          { "text": "朋友家中聚會", "scores": { "fresh": 0, "ritual": 2, "layered": 0 } }
+        ]
+      },
+      {
+        "id": "q5",
+        "text": "你最想如何享用植酌？",
+        "options": [
+          { "text": "直接純飲感受原味", "scores": { "fresh": 1, "ritual": 0, "layered": 1 } },
+          { "text": "加氣泡水輕盈喝", "scores": { "fresh": 2, "ritual": 0, "layered": 0 } },
+          { "text": "配茶飲感受層次", "scores": { "fresh": 0, "ritual": 0, "layered": 2 } },
+          { "text": "調成派對特調", "scores": { "fresh": 0, "ritual": 2, "layered": 0 } }
+        ]
+      }
+    ],
+    "results": {
+      "fresh": {
+        "type": "fresh",
+        "name": "清新探索型",
+        "recommendation": "植酌 × 柑橘氣泡飲",
+        "description": "喜歡嘗試新鮮事物，追求清爽自然的風味體驗。每一口都是新的探索。",
+        "lineJoinUrl": "https://line.me/R/ti/p/@fizzt_crm"
+      },
+      "ritual": {
+        "type": "ritual",
+        "name": "微醺儀式型",
+        "recommendation": "植酌 × 香草氣泡特調",
+        "description": "生活需要儀式感，每次享用都是給自己的小獎勵。微甜順口，從容不迫。",
+        "lineJoinUrl": "https://line.me/R/ti/p/@fizzt_crm"
+      },
+      "layered": {
+        "type": "layered",
+        "name": "層次品味型",
+        "recommendation": "植酌 × 茶感風味調飲",
+        "description": "懂得品味層次，欣賞複雜而豐富的風味。每一口都有不同的驚喜。",
+        "lineJoinUrl": "https://line.me/R/ti/p/@fizzt_crm"
+      }
+    }
+  },
+  "line": {
+    "joinUrl": "https://line.me/R/ti/p/@fizzt_crm"
+  }
+}
