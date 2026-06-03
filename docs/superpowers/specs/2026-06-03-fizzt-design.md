@@ -21,8 +21,7 @@
 | 建置 | Vite 8 | 現有起點 |
 | 路由 | React Router v7 | SPA 路由，輕量 |
 | 樣式 | Tailwind CSS v4 | Design token via CSS vars |
-| 動畫 | Framer Motion | 頁面轉場、Quiz 動畫 |
-| 捲動動畫 | GSAP ScrollTrigger | 產品介紹頁電影級滾輪動畫 |
+| 動畫 | GSAP + ScrollTrigger | 所有動畫統一：Landing fade-in、Quiz crossfade、產品頁捲動 |
 | WebAR | MindAR.js（mindar-image）+ Three.js | Image Target + 3D model 渲染（官方支援組合） |
 | 部署 | Cloudflare Pages | 免費 CDN、自訂 domain |
 | 分析 | GA4 via gtag（選用） | 純瀏覽器 SDK，無後端 |

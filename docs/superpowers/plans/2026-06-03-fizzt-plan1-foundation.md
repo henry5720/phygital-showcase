@@ -4,9 +4,9 @@
 
 **Goal:** 建立 Vite + React 19 SPA 基礎架構，實作 Landing Page 與 Quiz 模組，可部署至 Cloudflare Pages 驗收，不依賴任何 AR 素材。
 
-**Architecture:** React Router v7 管理 `/`, `/ar`, `/quiz`, `/quiz/result/:type`, `/product` 五條路由。`config.json` 集中管理品牌設定與 quiz 題目，`useConfig` hook 在掛載時將 design token 注入 CSS custom properties。Quiz 計分為純函式（`calculateResult`），完全可單元測試。
+**Architecture:** React Router v7 管理五條路由。`config.json` 集中管理品牌設定與 quiz 題目，`useConfig` hook 在掛載時將 design token 注入 CSS custom properties。動畫統一使用 GSAP（Landing fade-in、QuizCard 滑入、ResultCard scale-in）。Quiz 計分為純函式（`calculateResult`），完全可單元測試。
 
-**Tech Stack:** React 19, TypeScript, Vite 8, React Router v7, Tailwind CSS v4, Framer Motion, Vitest + Testing Library
+**Tech Stack:** React 19, TypeScript, Vite 8, React Router v7, Tailwind CSS v4, GSAP, Vitest + Testing Library
 
 ---
 
@@ -25,14 +25,14 @@ src/
 │   ├── quiz.ts                   # calculateResult() 純函式
 │   └── quiz.test.ts
 ├── pages/
-│   ├── Landing.tsx               # 3 CTA 按鈕
+│   ├── Landing.tsx               # 3 CTA 按鈕，GSAP stagger fade-in
 │   ├── ArGuide.tsx               # Plan 2 placeholder
-│   ├── Quiz.tsx                  # 測驗主流程
+│   ├── Quiz.tsx                  # 測驗主流程，key prop 驅動 QuizCard 重新掛載
 │   └── QuizResult.tsx            # 結果 + LINE CTA
 ├── components/
-│   ├── QuizCard.tsx              # 單題卡片 + Framer Motion
+│   ├── QuizCard.tsx              # 單題卡片，GSAP onMount 滑入
 │   ├── QuizCard.test.tsx
-│   ├── ResultCard.tsx            # 風味人格結果卡
+│   ├── ResultCard.tsx            # 風味人格結果卡，GSAP onMount scale-in
 │   └── ResultCard.test.tsx
 ├── test/
 │   └── setup.ts                  # @testing-library/jest-dom setup
@@ -56,10 +56,10 @@ public/
 - [ ] **Step 1: 安裝 runtime 依賴**
 
 ```bash
-pnpm add react-router framer-motion
+pnpm add react-router gsap
 ```
 
-Expected: `node_modules/react-router` 與 `node_modules/framer-motion` 出現。
+Expected: `node_modules/react-router` 與 `node_modules/gsap` 出現。
 
 - [ ] **Step 2: 安裝 Tailwind CSS v4 + dev 依賴**
 
@@ -142,7 +142,7 @@ Expected: `No test files found` 或 `0 tests passed`，不報錯。
 
 ```bash
 git add vite.config.ts src/index.css src/test/setup.ts package.json pnpm-lock.yaml
-git commit -m "chore: 安裝 Tailwind v4、React Router v7、Framer Motion、Vitest"
+git commit -m "chore: 安裝 Tailwind v4、React Router v7、GSAP、Vitest"
 ```
 
 ---
@@ -393,7 +393,7 @@ describe('useConfig', () => {
 pnpm test:run
 ```
 
-Expected: `Cannot find module './useConfig'` 或類似錯誤。
+Expected: `Cannot find module './useConfig'`
 
 - [ ] **Step 3: 實作 useConfig**
 
@@ -437,30 +437,8 @@ git commit -m "feat: useConfig hook，CSS vars 注入 design token"
 **Files:**
 - Create: `src/router.tsx`
 - Modify: `src/main.tsx`
-- Modify: `src/App.tsx`（簡化為空殼，實際由 router 接管）
 
-- [ ] **Step 1: 建立 router.tsx**
-
-```tsx
-// src/router.tsx
-import { createBrowserRouter } from 'react-router'
-import { Landing } from './pages/Landing'
-import { ArGuide } from './pages/ArGuide'
-import { Quiz } from './pages/Quiz'
-import { QuizResult } from './pages/QuizResult'
-
-export const router = createBrowserRouter([
-  { path: '/', element: <Landing /> },
-  { path: '/ar', element: <ArGuide /> },
-  { path: '/quiz', element: <Quiz /> },
-  { path: '/quiz/result/:type', element: <QuizResult /> },
-  { path: '/product', element: <div style={{ color: '#fff', padding: '2rem' }}>Product page — Plan 2</div> },
-])
-```
-
-注意：Landing、ArGuide、Quiz、QuizResult 此時尚未建立，下一步先建 placeholder 讓 TypeScript 不報錯。
-
-- [ ] **Step 2: 建立頁面 placeholders（讓 router 可以 import）**
+- [ ] **Step 1: 建立頁面 placeholders**
 
 ```tsx
 // src/pages/Landing.tsx
@@ -480,6 +458,25 @@ export function Quiz() { return <div /> }
 ```tsx
 // src/pages/QuizResult.tsx
 export function QuizResult() { return <div /> }
+```
+
+- [ ] **Step 2: 建立 router.tsx**
+
+```tsx
+// src/router.tsx
+import { createBrowserRouter } from 'react-router'
+import { Landing } from './pages/Landing'
+import { ArGuide } from './pages/ArGuide'
+import { Quiz } from './pages/Quiz'
+import { QuizResult } from './pages/QuizResult'
+
+export const router = createBrowserRouter([
+  { path: '/', element: <Landing /> },
+  { path: '/ar', element: <ArGuide /> },
+  { path: '/quiz', element: <Quiz /> },
+  { path: '/quiz/result/:type', element: <QuizResult /> },
+  { path: '/product', element: <div style={{ color: '#fff', padding: '2rem' }}>Product page — Plan 2</div> },
+])
 ```
 
 - [ ] **Step 3: 更新 src/main.tsx**
@@ -527,29 +524,50 @@ git commit -m "feat: React Router v7 路由設定 + 頁面骨架"
 **Files:**
 - Modify: `src/pages/Landing.tsx`（替換 placeholder）
 
+**GSAP 策略：** `gsap.context()` 範圍化動畫，cleanup 用 `ctx.revert()`，避免記憶體洩漏。
+
 - [ ] **Step 1: 實作 Landing.tsx**
 
 ```tsx
 // src/pages/Landing.tsx
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
-import { motion } from 'framer-motion'
+import gsap from 'gsap'
 import { useConfig } from '../hooks/useConfig'
 
 export function Landing() {
   const config = useConfig()
   const navigate = useNavigate()
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from('.landing-hero', {
+        opacity: 0,
+        y: 20,
+        duration: 0.6,
+        ease: 'power2.out',
+      })
+      gsap.from('.cta-btn', {
+        opacity: 0,
+        y: 12,
+        duration: 0.4,
+        stagger: 0.12,
+        delay: 0.3,
+        ease: 'power2.out',
+      })
+    }, rootRef)
+
+    return () => ctx.revert()
+  }, [])
 
   return (
     <div
+      ref={rootRef}
       className="min-h-dvh flex flex-col items-center justify-center px-6"
       style={{ backgroundColor: 'var(--color-bg)' }}
     >
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="text-center mb-14"
-      >
+      <div className="landing-hero text-center mb-14">
         <h1
           className="text-5xl font-bold tracking-tight mb-3"
           style={{ color: 'var(--color-primary)' }}
@@ -559,55 +577,30 @@ export function Landing() {
         <p className="text-base opacity-70" style={{ color: 'var(--color-text)' }}>
           {config.brand.subtitle}
         </p>
-      </motion.div>
+      </div>
 
       <div className="flex flex-col gap-4 w-full max-w-xs">
-        {[
-          {
-            label: 'WebAR 體驗',
-            delay: 0.2,
-            onClick: () => navigate('/ar'),
-            style: {
-              borderColor: 'var(--color-primary)',
-              color: 'var(--color-primary)',
-              backgroundColor: 'transparent',
-            } as React.CSSProperties,
-            className: 'border-2',
-          },
-          {
-            label: '互動測驗',
-            delay: 0.35,
-            onClick: () => navigate('/quiz'),
-            style: {
-              backgroundColor: 'var(--color-primary)',
-              color: 'var(--color-bg)',
-            } as React.CSSProperties,
-            className: '',
-          },
-          {
-            label: '加入 LINE@',
-            delay: 0.5,
-            onClick: () => { window.location.href = config.line.joinUrl },
-            style: {
-              borderColor: '#22c55e',
-              color: '#22c55e',
-              backgroundColor: 'transparent',
-            } as React.CSSProperties,
-            className: 'border-2',
-          },
-        ].map(({ label, delay, onClick, style, className }) => (
-          <motion.button
-            key={label}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay }}
-            onClick={onClick}
-            className={`py-4 px-8 rounded-full font-semibold text-base cursor-pointer ${className}`}
-            style={style}
-          >
-            {label}
-          </motion.button>
-        ))}
+        <button
+          className="cta-btn py-4 px-8 rounded-full font-semibold text-base cursor-pointer border-2"
+          style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)', backgroundColor: 'transparent' }}
+          onClick={() => navigate('/ar')}
+        >
+          WebAR 體驗
+        </button>
+        <button
+          className="cta-btn py-4 px-8 rounded-full font-semibold text-base cursor-pointer"
+          style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-bg)' }}
+          onClick={() => navigate('/quiz')}
+        >
+          互動測驗
+        </button>
+        <button
+          className="cta-btn py-4 px-8 rounded-full font-semibold text-base cursor-pointer border-2"
+          style={{ borderColor: '#22c55e', color: '#22c55e', backgroundColor: 'transparent' }}
+          onClick={() => { window.location.href = config.line.joinUrl }}
+        >
+          加入 LINE@
+        </button>
       </div>
     </div>
   )
@@ -621,17 +614,15 @@ pnpm dev
 ```
 
 開啟 `http://localhost:5173/`，確認：
-- 三個 CTA 按鈕依序淡入
-- 品牌名稱 `植酌 Fizz't` 顯示金色
-- 背景為深藍 `#051129`
-- 點擊「互動測驗」→ 導至 `/quiz`（目前空白）
-- 點擊「WebAR 體驗」→ 導至 `/ar`（目前空白）
+- 品牌名稱先淡入，三個按鈕依序 stagger 淡入
+- 背景深藍、品牌名金色
+- 點擊「互動測驗」→ `/quiz`；點擊「WebAR 體驗」→ `/ar`
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add src/pages/Landing.tsx
-git commit -m "feat: Landing Page，三個 CTA 按鈕 + Framer Motion 動畫"
+git commit -m "feat: Landing Page，GSAP stagger fade-in 動畫"
 ```
 
 ---
@@ -661,17 +652,14 @@ describe('calculateResult', () => {
   })
 
   it('returns "ritual" when ritual scores dominate', () => {
-    // ritual: 2+2+1=5, fresh: 0+0+1=1
     expect(calculateResult([ritual, ritual, mixedFreshRitual])).toBe('ritual')
   })
 
   it('returns "layered" when layered scores dominate', () => {
-    // layered: 2+2=4, fresh: 2
     expect(calculateResult([layered, layered, fresh])).toBe('layered')
   })
 
   it('sums scores across all answers', () => {
-    // fresh: 2+1=3, ritual: 0+1=1
     expect(calculateResult([fresh, mixedFreshRitual])).toBe('fresh')
   })
 
@@ -734,6 +722,8 @@ git commit -m "feat: calculateResult() 純函式 + 完整單元測試"
 - Create: `src/components/QuizCard.tsx`
 - Create: `src/components/QuizCard.test.tsx`
 
+**GSAP 策略：** Quiz.tsx 用 `key={currentIndex}` 讓 QuizCard 每題重新 mount，QuizCard 在 `useEffect` 內執行 `gsap.fromTo` 滑入動畫。不需要 exit 動畫（新卡片滑入時舊卡片已消失，視覺上足夠流暢）。
+
 - [ ] **Step 1: 寫 failing tests**
 
 ```tsx
@@ -792,7 +782,8 @@ Expected: `Cannot find module './QuizCard'`
 
 ```tsx
 // src/components/QuizCard.tsx
-import { motion } from 'framer-motion'
+import { useEffect, useRef } from 'react'
+import gsap from 'gsap'
 import type { QuizQuestion, QuizOption } from '../config/types'
 
 interface Props {
@@ -803,19 +794,25 @@ interface Props {
 }
 
 export function QuizCard({ question, questionNumber, total, onSelect }: Props) {
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    gsap.fromTo(
+      cardRef.current,
+      { opacity: 0, x: 30 },
+      { opacity: 1, x: 0, duration: 0.28, ease: 'power2.out' },
+    )
+  }, [])
+
   return (
-    <motion.div
-      key={question.id}
-      initial={{ opacity: 0, x: 40 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -40 }}
-      transition={{ duration: 0.28 }}
-      className="w-full max-w-sm mx-auto"
-    >
+    <div ref={cardRef} className="w-full max-w-sm mx-auto">
       <p className="text-sm mb-3 opacity-50" style={{ color: 'var(--color-text)' }}>
         {questionNumber} / {total}
       </p>
-      <div className="w-full h-0.5 rounded-full mb-8" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+      <div
+        className="w-full h-0.5 rounded-full mb-8"
+        style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+      >
         <div
           className="h-0.5 rounded-full transition-all duration-500"
           style={{
@@ -824,7 +821,10 @@ export function QuizCard({ question, questionNumber, total, onSelect }: Props) {
           }}
         />
       </div>
-      <h2 className="text-xl font-semibold mb-6 leading-snug" style={{ color: 'var(--color-text)' }}>
+      <h2
+        className="text-xl font-semibold mb-6 leading-snug"
+        style={{ color: 'var(--color-text)' }}
+      >
         {question.text}
       </h2>
       <div className="flex flex-col gap-3">
@@ -832,7 +832,7 @@ export function QuizCard({ question, questionNumber, total, onSelect }: Props) {
           <button
             key={option.text}
             onClick={() => onSelect(option)}
-            className="py-3.5 px-5 rounded-2xl text-left border transition-opacity duration-150 active:opacity-70 cursor-pointer"
+            className="py-3.5 px-5 rounded-2xl text-left border cursor-pointer"
             style={{
               borderColor: 'var(--color-primary)',
               color: 'var(--color-text)',
@@ -843,7 +843,7 @@ export function QuizCard({ question, questionNumber, total, onSelect }: Props) {
           </button>
         ))}
       </div>
-    </motion.div>
+    </div>
   )
 }
 ```
@@ -854,13 +854,13 @@ export function QuizCard({ question, questionNumber, total, onSelect }: Props) {
 pnpm test:run
 ```
 
-Expected: `9 tests passed`（含前面所有 task 的測試）
+Expected: `9 tests passed`
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add src/components/QuizCard.tsx src/components/QuizCard.test.tsx
-git commit -m "feat: QuizCard component + Framer Motion 轉場"
+git commit -m "feat: QuizCard component + GSAP 滑入動畫"
 ```
 
 ---
@@ -876,7 +876,6 @@ git commit -m "feat: QuizCard component + Framer Motion 轉場"
 // src/pages/Quiz.tsx
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { AnimatePresence } from 'framer-motion'
 import { useConfig } from '../hooks/useConfig'
 import { calculateResult } from '../lib/quiz'
 import { QuizCard } from '../components/QuizCard'
@@ -912,15 +911,14 @@ export function Quiz() {
         {title}
       </h1>
       <div className="w-full max-w-sm">
-        <AnimatePresence mode="wait">
-          <QuizCard
-            key={currentIndex}
-            question={questions[currentIndex]}
-            questionNumber={currentIndex + 1}
-            total={questions.length}
-            onSelect={handleSelect}
-          />
-        </AnimatePresence>
+        {/* key={currentIndex} 讓每題重新 mount，觸發 QuizCard 內的 GSAP 滑入動畫 */}
+        <QuizCard
+          key={currentIndex}
+          question={questions[currentIndex]}
+          questionNumber={currentIndex + 1}
+          total={questions.length}
+          onSelect={handleSelect}
+        />
       </div>
     </div>
   )
@@ -934,9 +932,9 @@ pnpm dev
 ```
 
 開啟 `http://localhost:5173/quiz`，手動走完 5 題，確認：
-- 每題選完後下一題以動畫切換進場
-- 進度條隨題數增加
-- 第 5 題選完後自動跳轉到 `/quiz/result/<type>`
+- 每題選完後新題目以滑入動畫出現
+- 進度條百分比隨題數增加
+- 第 5 題選完後自動跳轉 `/quiz/result/<type>`
 
 - [ ] **Step 3: Commit**
 
@@ -1009,7 +1007,8 @@ Expected: `Cannot find module './ResultCard'`
 
 ```tsx
 // src/components/ResultCard.tsx
-import { motion } from 'framer-motion'
+import { useEffect, useRef } from 'react'
+import gsap from 'gsap'
 import type { QuizResult } from '../config/types'
 
 interface Props {
@@ -1018,13 +1017,18 @@ interface Props {
 }
 
 export function ResultCard({ result, onJoinLine }: Props) {
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    gsap.fromTo(
+      cardRef.current,
+      { opacity: 0, scale: 0.96 },
+      { opacity: 1, scale: 1, duration: 0.45, ease: 'power2.out' },
+    )
+  }, [])
+
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.45 }}
-      className="w-full max-w-sm mx-auto text-center"
-    >
+    <div ref={cardRef} className="w-full max-w-sm mx-auto text-center">
       <p className="text-sm opacity-50 mb-2" style={{ color: 'var(--color-text)' }}>
         你是
       </p>
@@ -1055,7 +1059,7 @@ export function ResultCard({ result, onJoinLine }: Props) {
       >
         加入 LINE 取得完整酒譜
       </button>
-    </motion.div>
+    </div>
   )
 }
 ```
@@ -1121,9 +1125,9 @@ export function QuizResult() {
 pnpm dev
 ```
 
-- 開啟 `http://localhost:5173/quiz`，走完 5 題，確認結果頁正確顯示
-- 直接開啟 `http://localhost:5173/quiz/result/fresh`、`/ritual`、`/layered` 確認三種結果皆正常
-- 開啟 `http://localhost:5173/quiz/result/invalid` 確認顯示 fallback 錯誤頁
+- 走完 5 題，確認結果頁 scale-in 動畫正確
+- 直接開啟 `/quiz/result/fresh`、`/ritual`、`/layered` 確認三種結果正常
+- 開啟 `/quiz/result/invalid` 確認顯示 fallback 錯誤頁
 
 - [ ] **Step 7: Commit**
 
@@ -1144,28 +1148,27 @@ git commit -m "feat: ResultCard + QuizResult 結果頁，含 fallback 錯誤處�
 
 ```tsx
 // src/pages/ArGuide.tsx
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
-import { motion } from 'framer-motion'
+import gsap from 'gsap'
 import { useConfig } from '../hooks/useConfig'
 
 export function ArGuide() {
   useConfig()
   const navigate = useNavigate()
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    gsap.fromTo(ref.current, { opacity: 0 }, { opacity: 1, duration: 0.4 })
+  }, [])
 
   return (
     <div
       className="min-h-dvh flex flex-col items-center justify-center px-6 text-center"
       style={{ backgroundColor: 'var(--color-bg)' }}
     >
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4 }}
-      >
-        <div
-          className="text-6xl mb-6 opacity-30"
-          style={{ color: 'var(--color-primary)' }}
-        >
+      <div ref={ref}>
+        <div className="text-6xl mb-6 opacity-30" style={{ color: 'var(--color-primary)' }}>
           AR
         </div>
         <h1 className="text-2xl font-bold mb-3" style={{ color: 'var(--color-primary)' }}>
@@ -1181,7 +1184,7 @@ export function ArGuide() {
         >
           返回首頁
         </button>
-      </motion.div>
+      </div>
     </div>
   )
 }
@@ -1189,8 +1192,9 @@ export function ArGuide() {
 
 - [ ] **Step 2: 建立 Cloudflare Pages SPA fallback**
 
+建立 `public/_redirects`，內容如下（純文字，無 `//` 開頭）：
+
 ```
-// public/_redirects
 /* /index.html 200
 ```
 
@@ -1216,13 +1220,7 @@ Expected: 無任何錯誤輸出。
 pnpm build
 ```
 
-Expected:
-```
-✓ built in ~Xs
-dist/index.html     ~0.5 kB
-dist/assets/...     (js + css bundles)
-```
-無任何 TypeScript 或 Vite build 錯誤。
+Expected: `dist/` 產出，無 TypeScript 或 Vite 錯誤。
 
 - [ ] **Step 6: 預覽 production build**
 
@@ -1230,7 +1228,7 @@ dist/assets/...     (js + css bundles)
 pnpm preview
 ```
 
-開啟 `http://localhost:4173/`，手動走完完整路徑：
+開啟 `http://localhost:4173/`，手動驗證：
 - Landing → Quiz（選完 5 題）→ 結果頁 → 點 LINE 按鈕
 - Landing → WebAR → 看到 placeholder
 - 直接在網址欄輸入 `/quiz/result/ritual`，重新整理後仍正常顯示（SPA fallback 驗證）
