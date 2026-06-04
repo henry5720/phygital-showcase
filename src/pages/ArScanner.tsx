@@ -17,7 +17,7 @@ export function ArScanner() {
   }
 
   function handleTargetLost() {
-    if (arState !== 'video_playing') setArState('idle')
+    setArState(prev => prev === 'video_playing' ? prev : 'idle')
   }
 
   function handleHotspot(type: 'A' | 'B' | 'C') {
