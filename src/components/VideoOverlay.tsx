@@ -11,7 +11,7 @@ export function VideoOverlay({ src, onEnd, onClose }: Props) {
       style={{ backgroundColor: 'rgba(0,0,0,0.92)' }}
     >
       <button
-        aria-label="✕"
+        aria-label="關閉"
         onClick={onClose}
         className="absolute top-4 right-4 z-10 text-2xl cursor-pointer opacity-70 hover:opacity-100"
         style={{ color: 'var(--color-text)' }}

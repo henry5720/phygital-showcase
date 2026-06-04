@@ -19,7 +19,7 @@ describe('VideoOverlay', () => {
     render(
       <VideoOverlay src="/test/video.mp4" onEnd={vi.fn()} onClose={onClose} />
     )
-    fireEvent.click(screen.getByRole('button', { name: '✕' }))
+    fireEvent.click(screen.getByRole('button', { name: '關閉' }))
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
