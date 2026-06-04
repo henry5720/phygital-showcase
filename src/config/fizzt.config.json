@@ -8,14 +8,14 @@
     "name": "植酌 Fizz't",
     "subtitle": "鳳梨發酵酵素飲",
     "heroImage": "/assets/hero.png",
-    "logoMindFile": "/assets/fizzt-logo.mind"
+    "logoMindFile": "/assets/fizzt/targets.mind"
   },
   "ar": {
-    "model": "/assets/bottle.glb",
+    "model": "/assets/fizzt/fizzt.glb",
     "videos": {
-      "stageA": "/assets/video-stage-a.mp4",
-      "stageB": "/assets/video-stage-b.mp4",
-      "stageC": "/assets/video-stage-c.mp4"
+      "stageA": "/assets/fizzt/video-stage-a.mp4",
+      "stageB": "/assets/fizzt/video-stage-b.mp4",
+      "stageC": "/assets/fizzt/video-stage-c.mp4"
     },
     "ctaText": "了解更多"
   },
