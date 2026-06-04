@@ -56,9 +56,13 @@ export function MindArCanvas({
       anchor.onTargetFound = () => onTargetFoundRef.current()
       anchor.onTargetLost = () => onTargetLostRef.current()
 
+      let gltfModel: THREE.Group | undefined
+
       const loader = new GLTFLoader()
       loader.load(modelSrc, (gltf) => {
+        if (stopped) return
         const model = gltf.scene
+        gltfModel = model
         model.scale.set(0.08, 0.08, 0.08)
         anchor.group.add(model)
       })
@@ -78,7 +82,8 @@ export function MindArCanvas({
         hotspotMeshes.push({ mesh, type: def.type })
       }
 
-      scene.add(new THREE.AmbientLight(0xffffff, 1.5))
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.5)
+      scene.add(ambientLight)
       const dir = new THREE.DirectionalLight(0xffffff, 1)
       dir.position.set(0, 1, 2)
       scene.add(dir)
@@ -104,6 +109,23 @@ export function MindArCanvas({
 
       stopFn = () => {
         container.removeEventListener('pointerdown', onPointerDown)
+        for (const h of hotspotMeshes) {
+          h.mesh.geometry.dispose()
+          ;(h.mesh.material as THREE.MeshBasicMaterial).dispose()
+        }
+        if (gltfModel) {
+          gltfModel.traverse((obj) => {
+            if ((obj as THREE.Mesh).isMesh) {
+              const m = obj as THREE.Mesh
+              m.geometry.dispose()
+              ;(Array.isArray(m.material) ? m.material : [m.material]).forEach((mat) =>
+                mat.dispose(),
+              )
+            }
+          })
+        }
+        scene.remove(ambientLight)
+        scene.remove(dir)
         mindarThree.stop()
       }
     })
