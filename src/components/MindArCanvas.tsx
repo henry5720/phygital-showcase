@@ -40,8 +40,8 @@ export function MindArCanvas({
     let stopped = false
     let stopFn: (() => void) | undefined
 
-    // @ts-expect-error mind-ar does not ship full TypeScript declarations
-    import('mind-ar/dist/mindar-image-three.prod.js').then(({ MindARThree }) => {
+    // @ts-expect-error mind-ar ships no TypeScript declarations
+    import('mind-ar/dist/mindar-image-three.prod.js').then(async ({ MindARThree }) => {
       if (stopped) return
 
       const mindarThree = new MindARThree({
@@ -50,21 +50,19 @@ export function MindArCanvas({
         maxTrack: 1,
       })
 
-      const { scene, camera } = mindarThree
+      const { renderer, scene, camera } = mindarThree
       const anchor = mindarThree.addAnchor(0)
 
       anchor.onTargetFound = () => onTargetFoundRef.current()
       anchor.onTargetLost = () => onTargetLostRef.current()
 
       let gltfModel: THREE.Group | undefined
-
       const loader = new GLTFLoader()
       loader.load(modelSrc, (gltf) => {
         if (stopped) return
-        const model = gltf.scene
-        gltfModel = model
-        model.scale.set(0.08, 0.08, 0.08)
-        anchor.group.add(model)
+        gltfModel = gltf.scene
+        gltfModel.scale.set(0.08, 0.08, 0.08)
+        anchor.group.add(gltfModel)
       })
 
       const hotspotMeshes: Array<{ mesh: THREE.Mesh; type: 'A' | 'B' | 'C' }> = []
@@ -83,9 +81,9 @@ export function MindArCanvas({
       }
 
       const ambientLight = new THREE.AmbientLight(0xffffff, 1.5)
-      scene.add(ambientLight)
       const dir = new THREE.DirectionalLight(0xffffff, 1)
       dir.position.set(0, 1, 2)
+      scene.add(ambientLight)
       scene.add(dir)
 
       const raycaster = new THREE.Raycaster()
@@ -105,10 +103,24 @@ export function MindArCanvas({
 
       const container = containerRef.current!
       container.addEventListener('pointerdown', onPointerDown)
-      mindarThree.start()
+
+      // await start() — it's async; setAnimationLoop only after camera is ready
+      await mindarThree.start()
+
+      if (stopped) {
+        renderer.setAnimationLoop(null)
+        mindarThree.stop()
+        return
+      }
+
+      // render loop — required for Three.js to draw frames
+      renderer.setAnimationLoop(() => {
+        renderer.render(scene, camera)
+      })
 
       stopFn = () => {
         container.removeEventListener('pointerdown', onPointerDown)
+        renderer.setAnimationLoop(null)
         for (const h of hotspotMeshes) {
           h.mesh.geometry.dispose()
           ;(h.mesh.material as THREE.MeshBasicMaterial).dispose()
@@ -118,9 +130,7 @@ export function MindArCanvas({
             if ((obj as THREE.Mesh).isMesh) {
               const m = obj as THREE.Mesh
               m.geometry.dispose()
-              ;(Array.isArray(m.material) ? m.material : [m.material]).forEach((mat) =>
-                mat.dispose(),
-              )
+              ;(Array.isArray(m.material) ? m.material : [m.material]).forEach((mat) => mat.dispose())
             }
           })
         }
