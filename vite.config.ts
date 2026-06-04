@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  optimizeDeps: {
+    exclude: ['mind-ar'],
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
