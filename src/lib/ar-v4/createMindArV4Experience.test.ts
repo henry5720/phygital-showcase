@@ -38,6 +38,7 @@ describe('createMindArV4Experience', () => {
   afterEach(() => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
+    document.head.querySelectorAll('style').forEach((style) => style.remove())
   })
 
   it('starts the MindAR runtime and stops rendering during cleanup', async () => {
@@ -62,6 +63,78 @@ describe('createMindArV4Experience', () => {
     experience.cleanup()
 
     expect(setAnimationLoopMock).toHaveBeenLastCalledWith(null)
+    expect(stopMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('removes MindAR overlay styles from document head during cleanup', async () => {
+    const style = document.createElement('style')
+    style.textContent = '.mindar-ui-overlay { display: block; }'
+    document.head.appendChild(style)
+    const anchor = { group: new THREE.Group() }
+    addAnchorMock.mockReturnValue(anchor)
+    startMock.mockResolvedValue(undefined)
+    stopMock.mockResolvedValue(undefined)
+    loadMock.mockImplementation((_url, onLoad) => {
+      onLoad({ scene: new THREE.Group() })
+    })
+
+    const experience = await createMindArV4Experience({
+      container: document.createElement('div'),
+      assets: AR_V4_ASSETS,
+      actions: AR_V4_ACTIONS,
+    })
+
+    experience.cleanup()
+
+    expect(style.isConnected).toBe(false)
+  })
+
+  it('runs cleanup only once when called repeatedly', async () => {
+    const anchor = { group: new THREE.Group() }
+    addAnchorMock.mockReturnValue(anchor)
+    startMock.mockResolvedValue(undefined)
+    stopMock.mockResolvedValue(undefined)
+    loadMock.mockImplementation((_url, onLoad) => {
+      onLoad({ scene: new THREE.Group() })
+    })
+
+    const experience = await createMindArV4Experience({
+      container: document.createElement('div'),
+      assets: AR_V4_ASSETS,
+      actions: AR_V4_ACTIONS,
+    })
+
+    experience.cleanup()
+    experience.cleanup()
+
+    expect(setAnimationLoopMock).toHaveBeenCalledWith(expect.any(Function))
+    expect(setAnimationLoopMock).toHaveBeenCalledWith(null)
+    expect(setAnimationLoopMock).toHaveBeenCalledTimes(2)
+    expect(stopMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('cleans up without calling onReady when the container detaches before start resolves', async () => {
+    const anchor = { group: new THREE.Group() }
+    const onReady = vi.fn()
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    addAnchorMock.mockReturnValue(anchor)
+    startMock.mockImplementation(async () => {
+      container.remove()
+    })
+    stopMock.mockResolvedValue(undefined)
+    loadMock.mockImplementation((_url, onLoad) => {
+      onLoad({ scene: new THREE.Group() })
+    })
+
+    await createMindArV4Experience({
+      container,
+      assets: AR_V4_ASSETS,
+      actions: AR_V4_ACTIONS,
+      onReady,
+    })
+
+    expect(onReady).not.toHaveBeenCalled()
     expect(stopMock).toHaveBeenCalledTimes(1)
   })
 })
