@@ -36,12 +36,12 @@ export function initArV2Experience(root: Document = document): Cleanup {
   }
 
   const onLeftClick = () => {
-    currentItem = (currentItem + 1) % 3
+    currentItem = (currentItem - 1 + 3) % 3
     showPortfolioItem(currentItem)
   }
 
   const onRightClick = () => {
-    currentItem = (currentItem - 1 + 3) % 3
+    currentItem = (currentItem + 1) % 3
     showPortfolioItem(currentItem)
   }
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { initArV2Experience } from './ar-v2'
 
 describe('initArV2Experience', () => {
@@ -27,10 +27,20 @@ describe('initArV2Experience', () => {
     expect(document.getElementById('portfolio-panel')?.getAttribute('visible')).toBe('true')
     expect(document.getElementById('portfolio-left-button')?.getAttribute('visible')).toBe('true')
     expect(document.getElementById('portfolio-right-button')?.getAttribute('visible')).toBe('true')
+    expect(document.getElementById('portfolio-item0')?.getAttribute('visible')).toBe('true')
 
+    // left = previous (wraps to item2 when at item0)
     document.getElementById('portfolio-left-button')?.dispatchEvent(new Event('click'))
-    expect(document.getElementById('portfolio-item1')?.getAttribute('visible')).toBe('true')
+    expect(document.getElementById('portfolio-item2')?.getAttribute('visible')).toBe('true')
     expect(document.getElementById('portfolio-item0')?.getAttribute('visible')).toBe('false')
+
+    // right = next (goes back to item0)
+    document.getElementById('portfolio-right-button')?.dispatchEvent(new Event('click'))
+    expect(document.getElementById('portfolio-item0')?.getAttribute('visible')).toBe('true')
+
+    // right again = next (item1)
+    document.getElementById('portfolio-right-button')?.dispatchEvent(new Event('click'))
+    expect(document.getElementById('portfolio-item1')?.getAttribute('visible')).toBe('true')
 
     cleanup()
   })
@@ -54,11 +64,35 @@ describe('initArV2Experience', () => {
     expect(document.getElementById('portfolio-panel')?.getAttribute('visible')).toBeNull()
   })
 
-  it('selects correct video format on preview click', () => {
+  it('selects mp4 format on preview click when webm is unsupported', () => {
     const cleanup = initArV2Experience(document)
+    const setAttributeSpy = vi.spyOn(document.getElementById('paintandquest-video-link')!, 'setAttribute')
 
     document.getElementById('ar-v2-target')?.dispatchEvent(new Event('targetFound'))
     document.getElementById('paintandquest-preview-button')?.dispatchEvent(new Event('click'))
+
+    expect(setAttributeSpy).toHaveBeenCalledWith('src', '#paintandquest-video-mp4')
+    cleanup()
+  })
+
+  it('selects webm format on preview click when webm is supported', () => {
+    const originalCreateElement = document.createElement.bind(document)
+    const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName, options) => {
+      const el = originalCreateElement(tagName, options)
+      if (tagName === 'video') {
+        vi.spyOn(el, 'canPlayType').mockReturnValue('probably')
+      }
+      return el
+    })
+
+    const cleanup = initArV2Experience(document)
+    const setAttributeSpy = vi.spyOn(document.getElementById('paintandquest-video-link')!, 'setAttribute')
+
+    document.getElementById('ar-v2-target')?.dispatchEvent(new Event('targetFound'))
+    document.getElementById('paintandquest-preview-button')?.dispatchEvent(new Event('click'))
+
+    expect(setAttributeSpy).toHaveBeenCalledWith('src', '#paintandquest-video-webm')
+    createElementSpy.mockRestore()
     cleanup()
   })
 })
