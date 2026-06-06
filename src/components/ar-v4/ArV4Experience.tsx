@@ -35,18 +35,32 @@ export function ArV4Experience({
   useEffect(() => {
     if (!containerRef.current) return
 
+    console.log('[ArV4Experience] Component mounted, initializing...')
+
     const experiencePromise = createMindArV4Experience({
       container: containerRef.current,
       assets: AR_V4_ASSETS,
       actions: AR_V4_ACTIONS,
-      onReady: () => onReadyRef.current?.(),
+      onReady: () => {
+        console.log('[ArV4Experience] Experience Ready')
+        onReadyRef.current?.()
+      },
       onTargetFound: () => onTargetFoundRef.current?.(),
       onTargetLost: () => onTargetLostRef.current?.(),
       onAction: (id) => onActionRef.current?.(id),
-      onError: (err) => onErrorRef.current?.(err),
+      onError: (err) => {
+        console.error('[ArV4Experience] onError callback:', err)
+        onErrorRef.current?.(err)
+      },
+    })
+
+    experiencePromise.catch((err) => {
+      console.error('[ArV4Experience] Initialization Promise rejected:', err)
+      onErrorRef.current?.(err)
     })
 
     return () => {
+      console.log('[ArV4Experience] Component unmounting, cleaning up...')
       void experiencePromise.then((experience) => {
         experience.cleanup()
       })
@@ -57,7 +71,7 @@ export function ArV4Experience({
     <div
       ref={containerRef}
       data-testid="ar-v4-container"
-      className="absolute inset-0 overflow-hidden bg-black"
+      className="absolute inset-0"
     />
   )
 }

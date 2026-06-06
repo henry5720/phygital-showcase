@@ -29,6 +29,7 @@ vi.mock('mind-ar/dist/mindar-image-three.prod.js', () => ({
       renderer: {
         setAnimationLoop: setAnimationLoopMock,
         render: renderMock,
+        setClearColor: vi.fn(),
       },
       scene: sceneMock,
       camera: cameraMock,

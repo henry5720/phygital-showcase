@@ -75,8 +75,35 @@ function stopMindArRuntime(mindarThree: MindArThreeRuntime | undefined) {
     const stopResult = mindarThree?.stop()
     void Promise.resolve(stopResult).catch(() => undefined)
   } catch {
-    // Cleanup must stay safe even if the runtime is already torn down.
   }
+}
+
+function inspectContainer(phase: string, el: HTMLElement) {
+  const rect = el.getBoundingClientRect()
+  const children = Array.from(el.children)
+  console.log(`[AR-V4:${phase}] Container: ${rect.width}x${rect.height} connected=${el.isConnected} children=${children.length}`)
+
+  children.forEach((child, i) => {
+    const tag = child.tagName.toLowerCase()
+    const style = window.getComputedStyle(child)
+    console.log(`[AR-V4:${phase}]   child[${i}]: <${tag}> display=${style.display} visibility=${style.visibility} opacity=${style.opacity} zIndex=${style.zIndex} pos=${style.position} size=${style.width}x${style.height} bg=${style.backgroundColor}`)
+
+    if (tag === 'video') {
+      const v = child as HTMLVideoElement
+      console.log(`[AR-V4:${phase}]   video: readyState=${v.readyState} paused=${v.paused} muted=${v.muted} ${v.videoWidth}x${v.videoHeight} srcObject=${!!v.srcObject}`)
+    }
+    if (tag === 'canvas') {
+      const ctx = (child as HTMLCanvasElement).getContext('webgl2') || (child as HTMLCanvasElement).getContext('webgl')
+      console.log(`[AR-V4:${phase}]   canvas: getContext=${!!ctx}`)
+    }
+  })
+}
+
+function inspectBodyOverlays(phase: string) {
+  document.querySelectorAll('.mindar-ui-overlay').forEach((el, i) => {
+    const style = window.getComputedStyle(el)
+    console.log(`[AR-V4:${phase}]   body-overlay[${i}]: display=${style.display} zIndex=${style.zIndex} bg=${style.backgroundColor}`)
+  })
 }
 
 export async function createMindArV4Experience(
@@ -162,10 +189,14 @@ export async function createMindArV4Experience(
     cleanupMindArDom()
   }
 
+  inspectContainer('before-import', options.container)
+
+  console.log('[AR-V4] Step 1/6: Importing MindAR module...')
   // @ts-expect-error MindAR ships this official runtime bundle without TypeScript declarations.
   const mindArModule = (await import('mind-ar/dist/mindar-image-three.prod.js')) as MindArModule
 
   try {
+    console.log('[AR-V4] Step 2/6: Creating MindARThree instance...')
     mindarThree = new mindArModule.MindARThree({
       container: options.container,
       imageTargetSrc: options.assets.targetMind,
@@ -179,17 +210,44 @@ export async function createMindArV4Experience(
       return { cleanup }
     }
 
+    inspectContainer('after-constructor', options.container)
+
     const { renderer, scene, camera } = mindarThree
-    anchor = mindarThree.addAnchor(0)
-    anchor.onTargetFound = () => options.onTargetFound?.()
-    anchor.onTargetLost = () => options.onTargetLost?.()
+
+    console.log('[AR-V4]   renderer domElement=', renderer.domElement?.width, 'x', renderer.domElement?.height)
 
     ambientLight = new THREE.AmbientLight(0xffffff, 0.7)
     directionalLight = new THREE.DirectionalLight(0xffffff, 0.8)
     directionalLight.position.set(1, 1, 1)
     scene.add(ambientLight, directionalLight)
 
-    // Setup Video
+    options.container.addEventListener('pointerdown', onPointerDown)
+
+    console.log('[AR-V4] Step 3/6: Calling mindarThree.start() — getUserMedia + AR startup...')
+    const startTime = performance.now()
+
+    await mindarThree.start()
+
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(1)
+    console.log(`[AR-V4] Step 4/6: start() resolved after ${elapsed}s`)
+    if (isDetachedAfterUse()) {
+      cleanup()
+      return { cleanup }
+    }
+
+    inspectContainer('after-start', options.container)
+    inspectBodyOverlays('after-start')
+
+    anchor = mindarThree.addAnchor(0)
+    anchor.onTargetFound = () => {
+      console.log('[AR-V4] Target Found')
+      options.onTargetFound?.()
+    }
+    anchor.onTargetLost = () => {
+      console.log('[AR-V4] Target Lost')
+      options.onTargetLost?.()
+    }
+
     video = document.createElement('video')
     video.setAttribute('src', options.assets.videoMp4)
     video.setAttribute('loop', 'true')
@@ -206,7 +264,6 @@ export async function createMindArV4Experience(
     anchor.group.add(videoPlane)
 
     const currentAnchor = anchor
-    // Setup Buttons
     options.actions.forEach((action, index) => {
       const buttonGeometry = new THREE.CircleGeometry(0.08, 32)
       const buttonMaterial = new THREE.MeshBasicMaterial({
@@ -221,8 +278,12 @@ export async function createMindArV4Experience(
       buttonMeshes.push(buttonMesh)
     })
 
-    options.container.addEventListener('pointerdown', onPointerDown)
+    renderer.setAnimationLoop(() => renderer.render(scene, camera))
+    console.log('[AR-V4]   setAnimationLoop started')
 
+    options.onReady?.()
+
+    console.log('[AR-V4] Step 5/6: Loading 3D model...')
     model = await new Promise<THREE.Group>((resolve, reject) => {
       new GLTFLoader().load(
         options.assets.model,
@@ -237,7 +298,11 @@ export async function createMindArV4Experience(
             reject(error)
           }
         },
-        undefined,
+        (xhr) => {
+          if (xhr.total) {
+            console.log(`[AR-V4]   model: ${Math.round((xhr.loaded / xhr.total) * 100)}% loaded`)
+          }
+        },
         reject,
       )
     })
@@ -250,18 +315,18 @@ export async function createMindArV4Experience(
     model.scale.setScalar(0.004)
     model.position.set(0, -0.2, 0.1)
     anchor.group.add(model)
-
-    await mindarThree.start()
-    if (isDetachedAfterUse()) {
-      cleanup()
-      return { cleanup }
-    }
-
-    renderer.setAnimationLoop(() => renderer.render(scene, camera))
-    options.onReady?.()
+    console.log('[AR-V4] Step 6/6: 3D model loaded')
 
     return { cleanup }
   } catch (error) {
+    console.error('[AR-V4] Error:', error)
+    if (error instanceof DOMException) {
+      console.error(`[AR-V4]   name=${error.name} message=${error.message} code=${error.code}`)
+    }
+    console.error('[AR-V4]   stack:', (error as Error).stack)
+    inspectContainer('after-error', options.container)
+
+    options.onError?.(error)
     cleanup()
     throw error
   }

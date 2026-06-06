@@ -36,7 +36,7 @@ describe('ArV4Experience', () => {
     render(<ArV4Experience />)
     const container = screen.getByTestId('ar-v4-container')
     expect(container).toBeDefined()
-    expect(container).toHaveClass('absolute', 'inset-0', 'overflow-hidden')
+    expect(container).toHaveClass('absolute', 'inset-0')
   })
   
   it('forwards callback props via refs without re-initializing', async () => {
