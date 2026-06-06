@@ -90,16 +90,62 @@ export async function createMindArV4Experience(
   let model: THREE.Group | undefined
   let ambientLight: THREE.AmbientLight | undefined
   let directionalLight: THREE.DirectionalLight | undefined
+  let video: HTMLVideoElement | undefined
+  let videoTexture: THREE.VideoTexture | undefined
+  let videoPlane: THREE.Mesh | undefined
+  const buttonMeshes: THREE.Mesh[] = []
+
+  const onPointerDown = (event: PointerEvent) => {
+    if (!mindarThree || !anchor) return
+    const { container } = options
+    const rect = container.getBoundingClientRect()
+    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+
+    const raycaster = new THREE.Raycaster()
+    raycaster.setFromCamera(new THREE.Vector2(x, y), mindarThree.camera)
+
+    const intersects = raycaster.intersectObjects(anchor.group.children, true)
+    if (intersects.length > 0) {
+      const clickedObject = intersects[0]?.object
+      if (clickedObject?.userData.isVideo) {
+        void video?.play().catch(() => undefined)
+        options.onAction?.('play-video')
+      } else if (clickedObject?.userData.actionId) {
+        options.onAction?.(clickedObject.userData.actionId)
+      }
+    }
+  }
 
   const cleanup = () => {
     if (cleaned) return
     cleaned = true
 
+    options.container.removeEventListener('pointerdown', onPointerDown)
     mindarThree?.renderer.setAnimationLoop(null)
+
+    if (video) {
+      video.pause()
+      video.src = ''
+      video.load()
+    }
+    videoTexture?.dispose()
+
     if (model) {
       disposeObject(model)
       anchor?.group.remove(model)
     }
+
+    if (videoPlane) {
+      disposeObject(videoPlane)
+      anchor?.group.remove(videoPlane)
+    }
+
+    buttonMeshes.forEach((button) => {
+      disposeObject(button)
+      anchor?.group.remove(button)
+    })
+
     if (mindarThree && ambientLight && directionalLight) {
       mindarThree.scene.remove(ambientLight, directionalLight)
     }
@@ -133,6 +179,40 @@ export async function createMindArV4Experience(
     directionalLight = new THREE.DirectionalLight(0xffffff, 0.8)
     directionalLight.position.set(1, 1, 1)
     scene.add(ambientLight, directionalLight)
+
+    // Setup Video
+    video = document.createElement('video')
+    video.setAttribute('src', options.assets.videoMp4)
+    video.setAttribute('loop', 'true')
+    video.setAttribute('muted', 'true')
+    video.setAttribute('playsinline', 'true')
+    video.setAttribute('webkit-playsinline', 'true')
+
+    videoTexture = new THREE.VideoTexture(video)
+    const videoGeometry = new THREE.PlaneGeometry(0.7, 0.39)
+    const videoMaterial = new THREE.MeshBasicMaterial({ map: videoTexture })
+    videoPlane = new THREE.Mesh(videoGeometry, videoMaterial)
+    videoPlane.position.set(0, 0.3, 0.02)
+    videoPlane.userData.isVideo = true
+    anchor.group.add(videoPlane)
+
+    const currentAnchor = anchor
+    // Setup Buttons
+    options.actions.forEach((action, index) => {
+      const buttonGeometry = new THREE.CircleGeometry(0.08, 32)
+      const buttonMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.5,
+      })
+      const buttonMesh = new THREE.Mesh(buttonGeometry, buttonMaterial)
+      buttonMesh.position.set(-0.24 + index * 0.24, -0.48, 0.02)
+      buttonMesh.userData.actionId = action.id
+      currentAnchor.group.add(buttonMesh)
+      buttonMeshes.push(buttonMesh)
+    })
+
+    options.container.addEventListener('pointerdown', onPointerDown)
 
     model = await new Promise<THREE.Group>((resolve, reject) => {
       new GLTFLoader().load(

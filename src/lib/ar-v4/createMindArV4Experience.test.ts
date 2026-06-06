@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AR_V4_ACTIONS, AR_V4_ASSETS } from './assets'
 import { createMindArV4Experience } from './createMindArV4Experience'
 
@@ -40,8 +40,14 @@ vi.mock('mind-ar/dist/mindar-image-three.prod.js', () => ({
 }))
 
 describe('createMindArV4Experience', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+  })
+
   afterEach(() => {
     vi.clearAllMocks()
+    vi.restoreAllMocks()
     document.body.innerHTML = ''
     document.head.querySelectorAll('style').forEach((style) => style.remove())
   })
@@ -244,5 +250,99 @@ describe('createMindArV4Experience', () => {
 
     expect(stopMock).toHaveBeenCalledTimes(1)
     expect(setAnimationLoopMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('triggers onAction when an action button is clicked', async () => {
+    const anchor = { group: new THREE.Group() }
+    addAnchorMock.mockReturnValue(anchor)
+    startMock.mockResolvedValue(undefined)
+    stopMock.mockResolvedValue(undefined)
+    loadMock.mockImplementation((_url, onLoad) => {
+      onLoad({ scene: new THREE.Group() })
+    })
+
+    const onAction = vi.fn()
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+
+    await createMindArV4Experience({
+      container,
+      assets: AR_V4_ASSETS,
+      actions: AR_V4_ACTIONS,
+      onAction,
+    })
+
+    // Find the button in the group (Task 3 buttons are CircleGeometry meshes)
+    const button = anchor.group.children.find(
+      (child) =>
+        child instanceof THREE.Mesh &&
+        child.geometry instanceof THREE.CircleGeometry &&
+        child.userData.actionId === 'profile',
+    )
+    expect(button).toBeDefined()
+
+    // Mock Raycaster to hit this button
+    const intersectSpy = vi
+      .spyOn(THREE.Raycaster.prototype, 'intersectObjects')
+      .mockReturnValue([{ object: button } as any])
+
+    // Simulate click
+    container.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        clientX: 100,
+        clientY: 100,
+        bubbles: true,
+      }),
+    )
+
+    expect(onAction).toHaveBeenCalledWith('profile')
+    intersectSpy.mockRestore()
+  })
+
+  it('plays video when the video plane is clicked', async () => {
+    const anchor = { group: new THREE.Group() }
+    addAnchorMock.mockReturnValue(anchor)
+    startMock.mockResolvedValue(undefined)
+    stopMock.mockResolvedValue(undefined)
+    loadMock.mockImplementation((_url, onLoad) => {
+      onLoad({ scene: new THREE.Group() })
+    })
+
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+
+    await createMindArV4Experience({
+      container,
+      assets: AR_V4_ASSETS,
+      actions: AR_V4_ACTIONS,
+    })
+
+    // Find the video plane (Task 3 video plane is a PlaneGeometry mesh)
+    const videoPlane = anchor.group.children.find(
+      (child) =>
+        child instanceof THREE.Mesh &&
+        child.geometry instanceof THREE.PlaneGeometry &&
+        child.userData.isVideo,
+    )
+    expect(videoPlane).toBeDefined()
+
+    const playSpy = vi.spyOn(HTMLMediaElement.prototype, 'play')
+
+    // Mock Raycaster to hit the video plane
+    const intersectSpy = vi
+      .spyOn(THREE.Raycaster.prototype, 'intersectObjects')
+      .mockReturnValue([{ object: videoPlane } as any])
+
+    // Simulate click
+    container.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        clientX: 100,
+        clientY: 100,
+        bubbles: true,
+      }),
+    )
+
+    expect(playSpy).toHaveBeenCalled()
+    intersectSpy.mockRestore()
   })
 })
