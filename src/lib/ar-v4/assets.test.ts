@@ -17,4 +17,30 @@ describe('AR V4 assets', () => {
       'play-video',
     ])
   })
+
+  it('uses the fixed first-version action metadata', () => {
+    expect(AR_V4_ACTIONS).toEqual([
+      {
+        id: 'profile',
+        label: 'Profile',
+        description: 'AR, VR solutions and consultation',
+      },
+      {
+        id: 'web',
+        label: 'Web',
+        description: 'https://softmind.tech',
+      },
+      {
+        id: 'play-video',
+        label: 'Video',
+        description: 'Play the portfolio video in the AR scene.',
+      },
+    ])
+  })
+
+  it('freezes exported asset and action contracts', () => {
+    expect(Object.isFrozen(AR_V4_ASSETS)).toBe(true)
+    expect(Object.isFrozen(AR_V4_ACTIONS)).toBe(true)
+    expect(AR_V4_ACTIONS.every((action) => Object.isFrozen(action))).toBe(true)
+  })
 })

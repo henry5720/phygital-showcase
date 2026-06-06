@@ -3,17 +3,17 @@ export type ArV4ActionId = 'profile' | 'web' | 'play-video'
 export type ArV4Status = 'initializing' | 'scanning' | 'tracking' | 'lost' | 'error'
 
 export type ArV4Action = {
-  id: ArV4ActionId
-  label: string
-  description: string
+  readonly id: ArV4ActionId
+  readonly label: string
+  readonly description: string
 }
 
 export type ArV4Assets = {
-  targetMind: string
-  targetImage: string
-  model: string
-  videoMp4: string
-  videoWebm: string
+  readonly targetMind: `${string}.mind`
+  readonly targetImage: `${string}.png`
+  readonly model: `${string}.gltf` | `${string}.glb`
+  readonly videoMp4: `${string}.mp4`
+  readonly videoWebm: `${string}.webm`
 }
 
 export type CreateMindArV4ExperienceOptions = {
