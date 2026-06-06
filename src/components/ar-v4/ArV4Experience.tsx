@@ -57,14 +57,7 @@ export function ArV4Experience({
     <div
       ref={containerRef}
       data-testid="ar-v4-container"
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        overflow: 'hidden',
-      }}
+      className="absolute inset-0 overflow-hidden bg-black"
     />
   )
 }
