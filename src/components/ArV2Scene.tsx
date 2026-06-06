@@ -1,4 +1,37 @@
+import { useEffect } from 'react'
+import { initArV2Experience } from '../lib/ar-v2'
+
+function loadScript(src: string): Promise<void> {
+  const existing = document.querySelector(`script[src="${src}"]`)
+  if (existing) return Promise.resolve()
+  return new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = src
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error(`Failed to load ${src}`))
+    document.head.appendChild(script)
+  })
+}
+
 export function ArV2Scene() {
+  useEffect(() => {
+    let disposed = false
+    let runtimeCleanup: (() => void) | undefined
+
+    Promise.all([
+      loadScript('https://aframe.io/releases/1.4.2/aframe.min.js'),
+      loadScript('/vendor/mindar-image-aframe.prod.js'),
+    ]).then(() => {
+      if (disposed) return
+      runtimeCleanup = initArV2Experience()
+    })
+
+    return () => {
+      disposed = true
+      runtimeCleanup?.()
+    }
+  }, [])
+
   return (
     <div className="h-dvh w-full">
       <a-scene
