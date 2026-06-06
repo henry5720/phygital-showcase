@@ -37,12 +37,23 @@ function disposeObject(object: THREE.Object3D) {
 
     const material = mesh.material
     if (Array.isArray(material)) {
-      material.forEach((item) => item.dispose())
+      material.forEach(disposeMaterial)
       return
     }
 
-    material?.dispose()
+    if (material) {
+      disposeMaterial(material)
+    }
   })
+}
+
+function disposeMaterial(material: THREE.Material) {
+  Object.values(material).forEach((value) => {
+    if (value instanceof THREE.Texture) {
+      value.dispose()
+    }
+  })
+  material.dispose()
 }
 
 function cleanupMindArDom() {

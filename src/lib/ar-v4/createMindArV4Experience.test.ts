@@ -9,6 +9,8 @@ const renderMock = vi.fn()
 const addAnchorMock = vi.fn()
 const startMock = vi.fn()
 const stopMock = vi.fn()
+let sceneMock: THREE.Scene
+let cameraMock: THREE.Camera
 
 vi.mock('three/examples/jsm/loaders/GLTFLoader.js', () => ({
   GLTFLoader: vi.fn(function () {
@@ -20,13 +22,16 @@ vi.mock('three/examples/jsm/loaders/GLTFLoader.js', () => ({
 
 vi.mock('mind-ar/dist/mindar-image-three.prod.js', () => ({
   MindARThree: vi.fn(function () {
+    sceneMock = new THREE.Scene()
+    cameraMock = new THREE.Camera()
+
     return {
       renderer: {
         setAnimationLoop: setAnimationLoopMock,
         render: renderMock,
       },
-      scene: new THREE.Scene(),
-      camera: new THREE.Camera(),
+      scene: sceneMock,
+      camera: cameraMock,
       addAnchor: addAnchorMock,
       start: startMock,
       stop: stopMock,
@@ -59,6 +64,8 @@ describe('createMindArV4Experience', () => {
 
     expect(startMock).toHaveBeenCalledTimes(1)
     expect(setAnimationLoopMock).toHaveBeenCalledWith(expect.any(Function))
+    setAnimationLoopMock.mock.calls[0]?.[0]()
+    expect(renderMock).toHaveBeenCalledWith(sceneMock, cameraMock)
 
     experience.cleanup()
 
@@ -136,5 +143,106 @@ describe('createMindArV4Experience', () => {
 
     expect(onReady).not.toHaveBeenCalled()
     expect(stopMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('disposes GLTF material textures during cleanup', async () => {
+    const anchor = { group: new THREE.Group() }
+    const texture = new THREE.Texture()
+    const material = new THREE.MeshBasicMaterial({ map: texture })
+    const geometry = new THREE.BoxGeometry()
+    const model = new THREE.Group()
+    model.add(new THREE.Mesh(geometry, material))
+    const textureDisposeSpy = vi.spyOn(texture, 'dispose')
+    const materialDisposeSpy = vi.spyOn(material, 'dispose')
+    addAnchorMock.mockReturnValue(anchor)
+    startMock.mockResolvedValue(undefined)
+    stopMock.mockResolvedValue(undefined)
+    loadMock.mockImplementation((_url, onLoad) => {
+      onLoad({ scene: model })
+    })
+
+    const experience = await createMindArV4Experience({
+      container: document.createElement('div'),
+      assets: AR_V4_ASSETS,
+      actions: AR_V4_ACTIONS,
+    })
+
+    experience.cleanup()
+
+    expect(textureDisposeSpy).toHaveBeenCalledTimes(1)
+    expect(materialDisposeSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('cleans partial runtime resources when start rejects', async () => {
+    const style = document.createElement('style')
+    style.textContent = '.mindar-ui-overlay { display: block; }'
+    document.head.appendChild(style)
+    const anchor = { group: new THREE.Group() }
+    addAnchorMock.mockReturnValue(anchor)
+    startMock.mockRejectedValue(new Error('start failed'))
+    stopMock.mockResolvedValue(undefined)
+    loadMock.mockImplementation((_url, onLoad) => {
+      onLoad({ scene: new THREE.Group() })
+    })
+
+    await expect(
+      createMindArV4Experience({
+        container: document.createElement('div'),
+        assets: AR_V4_ASSETS,
+        actions: AR_V4_ACTIONS,
+      }),
+    ).rejects.toThrow('start failed')
+
+    expect(setAnimationLoopMock).toHaveBeenCalledTimes(1)
+    expect(setAnimationLoopMock).toHaveBeenCalledWith(null)
+    expect(stopMock).toHaveBeenCalledTimes(1)
+    expect(style.isConnected).toBe(false)
+  })
+
+  it('keeps cleanup safe and idempotent when stop throws', async () => {
+    const anchor = { group: new THREE.Group() }
+    addAnchorMock.mockReturnValue(anchor)
+    startMock.mockResolvedValue(undefined)
+    stopMock.mockImplementation(() => {
+      throw new Error('stop failed')
+    })
+    loadMock.mockImplementation((_url, onLoad) => {
+      onLoad({ scene: new THREE.Group() })
+    })
+
+    const experience = await createMindArV4Experience({
+      container: document.createElement('div'),
+      assets: AR_V4_ASSETS,
+      actions: AR_V4_ACTIONS,
+    })
+
+    expect(() => experience.cleanup()).not.toThrow()
+    expect(() => experience.cleanup()).not.toThrow()
+
+    expect(stopMock).toHaveBeenCalledTimes(1)
+    expect(setAnimationLoopMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps cleanup safe and idempotent when stop rejects', async () => {
+    const anchor = { group: new THREE.Group() }
+    addAnchorMock.mockReturnValue(anchor)
+    startMock.mockResolvedValue(undefined)
+    stopMock.mockRejectedValue(new Error('stop rejected'))
+    loadMock.mockImplementation((_url, onLoad) => {
+      onLoad({ scene: new THREE.Group() })
+    })
+
+    const experience = await createMindArV4Experience({
+      container: document.createElement('div'),
+      assets: AR_V4_ASSETS,
+      actions: AR_V4_ACTIONS,
+    })
+
+    expect(() => experience.cleanup()).not.toThrow()
+    expect(() => experience.cleanup()).not.toThrow()
+    await Promise.resolve()
+
+    expect(stopMock).toHaveBeenCalledTimes(1)
+    expect(setAnimationLoopMock).toHaveBeenCalledTimes(2)
   })
 })
