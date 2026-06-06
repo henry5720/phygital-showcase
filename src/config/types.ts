@@ -1,3 +1,5 @@
+// ─── Quiz Layer ───
+
 export interface QuizOption {
   text: string
   scores: Record<string, number>
@@ -17,18 +19,19 @@ export interface QuizResult {
   lineJoinUrl: string
 }
 
-export interface ProductConfig {
-  theme: {
-    primaryColor: string
-    backgroundColor: string
-    textColor: string
-  }
-  brand: {
-    name: string
-    subtitle: string
-    heroImage: string
-    logoMindFile: string
-  }
+export interface QuizConfig {
+  title: string
+  questions: QuizQuestion[]
+  results: Record<string, QuizResult>
+}
+
+// ─── Brand Layer (TS constants, not AI-generated) ───
+
+export interface BrandConfig {
+  name: string
+  subtitle: string
+  heroImage: string
+  logoMindFile: string
   ar: {
     model: string
     videos: {
@@ -38,12 +41,23 @@ export interface ProductConfig {
     }
     ctaText: string
   }
-  quiz: {
-    title: string
-    questions: QuizQuestion[]
-    results: Record<string, QuizResult>
-  }
   line: {
     joinUrl: string
   }
+}
+
+// ─── Design Token Layer ───
+
+export interface DesignTokens {
+  primaryColor: string
+  backgroundColor: string
+  textColor: string
+}
+
+// ─── Composed Config ───
+
+export interface ProductConfig {
+  tokens: DesignTokens
+  brand: BrandConfig
+  quiz: QuizConfig
 }

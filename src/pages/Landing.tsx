@@ -65,7 +65,7 @@ export function Landing() {
         <button
           className="cta-btn py-4 px-8 rounded-full font-semibold text-base cursor-pointer border-2"
           style={{ borderColor: '#22c55e', color: '#22c55e', backgroundColor: 'transparent' }}
-          onClick={() => { window.location.href = config.line.joinUrl }}
+          onClick={() => { window.location.href = config.brand.line.joinUrl }}
         >
           加入 LINE@
         </button>
