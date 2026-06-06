@@ -48,6 +48,9 @@ export function MindArCanvas({
         container: containerRef.current!,
         imageTargetSrc: mindFileSrc,
         maxTrack: 1,
+        uiLoading: 'no',
+        uiScanning: 'yes',
+        uiError: 'no',
       })
 
       const { renderer, scene, camera } = mindarThree
@@ -146,5 +149,5 @@ export function MindArCanvas({
     }
   }, [modelSrc, mindFileSrc])
 
-  return <div ref={containerRef} className="w-full h-full" />
+  return <div ref={containerRef} className="absolute inset-0 ar-container" />
 }

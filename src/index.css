@@ -12,6 +12,18 @@
   box-sizing: border-box;
 }
 
+.ar-container video,
+.ar-container canvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+.ar-container video {
+  object-fit: cover !important;
+}
+
 body {
   margin: 0;
   background-color: var(--color-bg);

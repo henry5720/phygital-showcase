@@ -22,9 +22,9 @@ export function ArScanner() {
 
   function handleHotspot(type: 'A' | 'B' | 'C') {
     const src = {
-      A: config.ar.videos.stageA,
-      B: config.ar.videos.stageB,
-      C: config.ar.videos.stageC,
+      A: config.brand.ar.videos.stageA,
+      B: config.brand.ar.videos.stageB,
+      C: config.brand.ar.videos.stageC,
     }[type]
     setVideoSrc(src)
     setArState('video_playing')
@@ -36,9 +36,9 @@ export function ArScanner() {
   }
 
   return (
-    <div className="relative w-full h-dvh" style={{ backgroundColor: '#000' }}>
+    <div className="relative w-full h-dvh overflow-hidden">
       <MindArCanvas
-        modelSrc={config.ar.model}
+        modelSrc={config.brand.ar.model}
         mindFileSrc={config.brand.logoMindFile}
         onTargetFound={handleTargetFound}
         onTargetLost={handleTargetLost}
@@ -55,7 +55,7 @@ export function ArScanner() {
 
       <button
         onClick={() => navigate('/ar')}
-        className="absolute top-4 left-4 text-sm opacity-50 hover:opacity-100 cursor-pointer pointer-events-auto"
+        className="absolute top-4 left-4 z-50 text-sm opacity-50 hover:opacity-100 cursor-pointer"
         style={{ color: '#fff' }}
       >
         ← 返回
