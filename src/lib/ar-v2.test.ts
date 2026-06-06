@@ -1,5 +1,20 @@
-import { describe, expect, it, vi } from 'vitest'
-import { initArV2Experience } from './ar-v2'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { initArV2Experience, cleanupArV2Artifacts } from './ar-v2'
+
+describe('cleanupArV2Artifacts', () => {
+  it('removes MindAR overlays and styles from the document', () => {
+    document.body.innerHTML = '<div class="mindar-ui-overlay"></div>'
+    const style = document.createElement('style')
+    style.textContent = '.mindar-ui-overlay { color: red; }'
+    document.head.appendChild(style)
+
+    cleanupArV2Artifacts(document)
+
+    expect(document.querySelector('.mindar-ui-overlay')).toBeNull()
+    const remainingStyle = document.head.querySelector('style')?.textContent || ''
+    expect(remainingStyle).not.toContain('mindar-ui-overlay')
+  })
+})
 
 describe('initArV2Experience', () => {
   beforeEach(() => {

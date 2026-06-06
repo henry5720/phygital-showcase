@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { initArV2Experience } from '../lib/ar-v2'
+import { initArV2Experience, cleanupArV2Artifacts } from '../lib/ar-v2'
 
 function loadScript(src: string): Promise<void> {
   const existing = document.querySelector(`script[src="${src}"]`)
@@ -29,6 +29,7 @@ export function ArV2Scene() {
     return () => {
       disposed = true
       runtimeCleanup?.()
+      cleanupArV2Artifacts()
     }
   }, [])
 

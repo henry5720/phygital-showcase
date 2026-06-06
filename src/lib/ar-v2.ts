@@ -13,6 +13,13 @@ function showPortfolioItem(index: number) {
   }
 }
 
+export function cleanupArV2Artifacts(root: Document = document) {
+  root.querySelectorAll('.mindar-ui-overlay').forEach((el) => el.remove())
+  root.head.querySelectorAll('style').forEach((el) => {
+    if (el.textContent?.includes('mindar-ui-overlay')) el.remove()
+  })
+}
+
 export function initArV2Experience(root: Document = document): Cleanup {
   const target = root.getElementById('ar-v2-target')
   const portfolio = root.getElementById('portfolio-panel')
