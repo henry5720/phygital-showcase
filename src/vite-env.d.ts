@@ -1,19 +1,25 @@
 /// <reference types="vite/client" />
 
 import 'react'
+import type React from 'react'
+
+type AFrameElementProps = React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+  [key: string]: unknown
+}
 
 declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
-      'a-scene': any
-      'a-assets': any
-      'a-asset-item': any
-      'a-camera': any
-      'a-entity': any
-      'a-plane': any
-      'a-image': any
-      'a-video': any
-      'a-gltf-model': any
+      'a-scene': AFrameElementProps
+      'a-assets': AFrameElementProps
+      'a-asset-item': AFrameElementProps
+      'a-camera': AFrameElementProps
+      'a-entity': AFrameElementProps
+      'a-plane': AFrameElementProps
+      'a-image': AFrameElementProps
+      'a-video': AFrameElementProps
+      'a-gltf-model': AFrameElementProps
+      'a-text': AFrameElementProps
     }
   }
 }
