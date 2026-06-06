@@ -24,6 +24,16 @@
   object-fit: cover !important;
 }
 
+video[style*="position: absolute"],
+video[style*="position:absolute"] {
+  object-fit: cover !important;
+  z-index: 0 !important;
+}
+
+a-scene canvas {
+  z-index: 1 !important;
+}
+
 body {
   margin: 0;
   background-color: var(--color-bg);

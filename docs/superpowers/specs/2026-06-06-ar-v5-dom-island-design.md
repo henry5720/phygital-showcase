@@ -31,7 +31,7 @@
 React component
   └─ <div ref={containerRef} />  ← 空容器
   └─ useEffect:
-       1. 動態載入 aframe.min.js + mindar-image-aframe.prod.js
+       1. 依序載入 aframe.min.js → mindar-image-aframe.prod.js
        2. 用 DOMParser 解析 scene.html → appendChild 注入
        3. 綁定互動事件
        4. cleanup: 銷毀 scene、停止 camera、移除 DOM
@@ -73,13 +73,13 @@ ProductARPage.tsx
        └─ <div ref={containerRef} />
        └─ useEffect → createArV5Island(container, callbacks)
             │
-            ├─ 1. loadScripts()        ← CDN: aframe + mindar
+            ├─ 1. loadScripts()        ← 先載 aframe，再載 mindar plugin
             ├─ 2. registerComponents() ← AFRAME.registerComponent
             ├─ 3. injectScene()        ← DOMParser(scene.html?raw) → appendChild
             ├─ 4. injectStyles()       ← <style> from styles.css?raw
             ├─ 5. waitForSceneLoad()   ← a-scene 'loaded' event
             ├─ 6. initInteractions()   ← ar-v5-interactions.ts
-            └─ return cleanup()        ← stop renderer, remove DOM, clear timers
+            └─ return cleanup()        ← stop runtime/camera, remove DOM, clear timers
 ```
 
 ## 各模組職責
@@ -97,20 +97,22 @@ ProductARPage.tsx
 ### `ar-v5-interactions.ts`
 - 純 DOM 操作，不依賴 React 或 A-Frame
 - 處理 targetFound → avatar 動畫 → portfolio 滑入 → info buttons 顯示
+- 處理 targetLost → 隱藏內容、停止 video、重設狀態，下一次 targetFound 可重新啟動
 - 處理 button clicks（portfolio 切換、video 播放、text 更新）
 - Session-based timer/event management，cleanup 可完全清除
 - **可獨立測試**（用 jsdom + fake timers）
 
 ### `createArV5Island.ts`
 - 工廠函式，orchestrate 整個流程
-- 載入 scripts → 註冊 components → 注入 scene → 等待 load → 初始化互動
-- 回傳 cleanup function
-- 處理 disposed/cancelled 狀態，避免 race condition
+- 載入 A-Frame → 載入 MindAR plugin → 註冊 components → 注入 scene → 等待 load → 初始化互動
+- 回傳可重複呼叫的 cleanup function
+- 初始化期間若 container 已 detach 或 wrapper 已取消，必須停止後續注入並清掉已建立資源
+- Cleanup 必須嘗試停止 A-Frame renderer、MindAR runtime、camera media tracks、video playback，並移除注入 DOM/CSS
 
 ### `MindARScene.tsx`
 - 薄 React wrapper
 - 只有 `<div ref>` + `useEffect`
-- 用 `cancelled` flag 處理 StrictMode double-mount
+- 用 cancellation controller/cleanup handle 處理 StrictMode double-mount，不允許 unmount 後再注入 scene
 - Callbacks 用 ref 包裝，避免 re-render
 
 ### `ProductARPage.tsx`
@@ -127,16 +129,17 @@ ProductARPage.tsx
    - Left/Right → 切換 portfolio items
    - Preview → 播放影片（判斷 webm/mp4 支援）
    - Profile/Web/Email/Location → 更新下方 text
-   - Text click (when web tab) → 導向 softmind.tech
+    - Text click (when web tab) → 導向 softmind.tech
+6. **Target Lost** → 隱藏 portfolio / buttons / text，停止影片並重設 activation，重新對準 target 後可重新播放啟動序列
 
 ## 風險與緩解
 
 | 風險 | 緩解措施 |
 |------|----------|
-| Camera 殘留 | `destroyArV5Scene` 停止 renderer + 清空 videos + 移除所有 DOM |
+| Camera 殘留 | `destroyArV5Scene` 停止 renderer/runtime + 停止 media tracks + 清空 videos + 移除所有 DOM |
 | A-Frame 全域狀態 | `registerComponent` 有 guard 防重複，scene 銷毀靠 `removeChild` |
-| StrictMode double-mount | `cancelled` flag 確保第一次 mount 的 cleanup 在第二次 mount 前執行 |
-| Script 重複載入 | `loadScript` 檢查現有 `<script>` 標籤，已載入則直接 resolve |
+| StrictMode double-mount | wrapper cleanup 會取消 pending init，factory 會檢查 container 是否仍 connected |
+| Script 重複載入 | `loadScript` 檢查現有 `<script>` 標籤，已載入則直接 resolve；MindAR 必須在 A-Frame 後載入 |
 | `?raw` import 型別 | Vite 原生支援，必要時加 `vite/client` 型別宣告 |
 
 ## 驗收標準
@@ -151,6 +154,7 @@ ProductARPage.tsx
 - [ ] 點 info 按鈕後 text 更新
 - [ ] 點 web text 後導向 softmind.tech
 - [ ] Target lost 後內容隱藏
+- [ ] Target lost 後影片停止，重新掃描可再次啟動序列
 - [ ] 離開頁面後 camera 不會殘留
 - [ ] 重新進入 AR 頁面可以再次正常啟動
 - [ ] 重複進入/離開 3 次無 memory leak
@@ -173,3 +177,10 @@ ProductARPage.tsx
 - 如果要換 target/model/video，只需改 `scene.html` 和互動邏輯
 - 如果要改成 iframe 方案，`scene.html` 可以直接搬到 `public/` 用
 - 如果要加更多互動，在 `ar-v5-interactions.ts` 擴充即可
+
+## 必要測試覆蓋
+
+- `ar-v5-interactions.test.ts`：targetFound 啟動序列、targetLost reset、portfolio 切換、video source 選擇、info text、web 導航、event/timer cleanup。
+- `createArV5Island.test.ts`：script 順序、scene/CSS 注入、load failure cleanup、idempotent cleanup、container detached/pending init cancellation。
+- `MindARScene.test.tsx`：mount 初始化、unmount cleanup、unmount before promise resolve、callback ref 更新不重新初始化。
+- `ProductARPage.test.tsx`：ready/found/lost/error 狀態顯示與返回行為。

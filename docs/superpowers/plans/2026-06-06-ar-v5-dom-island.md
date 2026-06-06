@@ -1,12 +1,13 @@
 # AR V5 DOM Island 實作計畫
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Git note:** Do not commit while executing this plan unless the user explicitly asks for commits. Use the `git diff` checkpoints to review each task's changes.
 
 **目標：** 新增 `/product-ar` 路由，用 DOM Island 方式實作 AR 體驗 — React 只管一個空 container div，整個 A-Frame + MindAR scene 定義在外部 HTML/CSS 檔案，用 DOMParser 注入，避免 React/A-Frame DOM 衝突。
 
-**架構：** React 只渲染一個 `<div ref>`。Mount 時，工廠函式動態載入 A-Frame + MindAR scripts，用 DOMParser 解析外部 `scene.html`，appendChild 注入 container，然後初始化互動邏輯。Unmount 時，cleanup 銷毀 scene、停止 camera、移除所有注入的 DOM。React 永遠不碰 A-Frame custom elements。
+**架構：** React 只渲染一個 `<div ref>`。Mount 時，工廠函式依序載入 A-Frame → MindAR scripts，用 DOMParser 解析外部 `scene.html`，appendChild 注入 container，然後初始化互動邏輯。Unmount 時，cleanup 取消 pending init、銷毀 scene、停止 camera/media tracks、移除所有注入的 DOM。React 永遠不碰 A-Frame custom elements。
 
-**技術棧：** React 19, React Router, TypeScript, Vite（用 `?raw` imports）, Vitest, A-Frame 1.4.2 (CDN), MindAR A-Frame (local vendor), 复用 `/public/assets/ar-v3/` 素材。
+**技術棧：** React 19, React Router, TypeScript, Vite（用 `?raw` imports）, Vitest, A-Frame 1.4.2 (CDN), A-Frame Extras 7.1.0 (CDN, `animation-mixer`), MindAR A-Frame (local vendor), 复用 `/public/assets/ar-v3/` 素材。
 
 ---
 
@@ -36,7 +37,7 @@ src/
 - 建立：`src/features/ar/ar-v5-interactions.ts`
 - 建立：`src/features/ar/ar-v5-interactions.test.ts`
 
-核心互動邏輯，從 `ar-v3.ts` 適配，完全脫鉤 React。測試模式同 `ar-v2.test.ts`。
+核心互動邏輯，從 `ar-v3.ts` 適配，完全脫鉤 React。測試模式同 `ar-v3.test.ts`，並補上 targetLost reset。
 
 - [ ] **步驟 1: 寫失敗的測試**
 
@@ -83,6 +84,7 @@ describe('initArV5Experience', () => {
     const cleanup = initArV5Experience(document)
 
     document.getElementById('ar-v5-target')?.dispatchEvent(new Event('targetFound'))
+    vi.advanceTimersByTime(10000)
 
     expect(document.getElementById('portfolio-panel')?.getAttribute('visible')).toBe('true')
     expect(document.getElementById('portfolio-item0')?.getAttribute('visible')).toBe('true')
@@ -94,7 +96,7 @@ describe('initArV5Experience', () => {
 
     document.getElementById('ar-v5-target')?.dispatchEvent(new Event('targetFound'))
 
-    vi.advanceTimersByTime(40)
+    vi.advanceTimersByTime(10)
     const avatar = document.getElementById('avatar')
     expect(avatar?.getAttribute('position')).toBe('0 -0.25 -0.292')
 
@@ -123,7 +125,25 @@ describe('initArV5Experience', () => {
 
     document.getElementById('ar-v5-target')?.dispatchEvent(new Event('targetFound'))
     document.getElementById('ar-v5-target')?.dispatchEvent(new Event('targetFound'))
+    vi.advanceTimersByTime(10000)
 
+    expect(document.getElementById('portfolio-panel')?.getAttribute('visible')).toBe('true')
+    cleanup()
+  })
+
+  it('resets content on targetLost and allows targetFound to replay', () => {
+    const cleanup = initArV5Experience(document)
+
+    document.getElementById('ar-v5-target')?.dispatchEvent(new Event('targetFound'))
+    vi.advanceTimersByTime(10000)
+    expect(document.getElementById('portfolio-panel')?.getAttribute('visible')).toBe('true')
+
+    document.getElementById('ar-v5-target')?.dispatchEvent(new Event('targetLost'))
+    expect(document.getElementById('portfolio-panel')?.getAttribute('visible')).toBe('false')
+    expect(document.getElementById('profile-button')?.getAttribute('visible')).toBe('false')
+
+    document.getElementById('ar-v5-target')?.dispatchEvent(new Event('targetFound'))
+    vi.advanceTimersByTime(10000)
     expect(document.getElementById('portfolio-panel')?.getAttribute('visible')).toBe('true')
     cleanup()
   })
@@ -310,6 +330,7 @@ function scheduleTimeout(session: ArV5Session, callback: () => void, delay: numb
 function scheduleInterval(session: ArV5Session, callback: () => void, delay: number) {
   const id = window.setInterval(callback, delay)
   session.intervals.push(id)
+  return id
 }
 
 function bindEvent(session: ArV5Session, el: Element | null, type: string, handler: EventListener) {
@@ -323,6 +344,14 @@ function cleanupSession(session: ArV5Session | null) {
   session.timeouts.forEach((id) => window.clearTimeout(id))
   session.intervals.forEach((id) => window.clearInterval(id))
   session.cleanupFns.forEach((fn) => fn())
+}
+
+function clearScheduledWork(session: ArV5Session | null) {
+  if (!session) return
+  session.timeouts.forEach((id) => window.clearTimeout(id))
+  session.intervals.forEach((id) => window.clearInterval(id))
+  session.timeouts = []
+  session.intervals = []
 }
 
 function createSession() {
@@ -346,6 +375,7 @@ function resetVideo(video: HTMLVideoElement | null) {
 
 function resetExperience(doc: Document, session?: ArV5Session | null, resetActivation = true) {
   if (session) {
+    clearScheduledWork(session)
     session.currentTab = ''
     session.itemIndex = 0
     if (resetActivation) session.hasActivated = false
@@ -445,6 +475,10 @@ export function initArV5Experience(doc: Document = document, options: InitArV5Op
     })
   })
 
+  bindEvent(session, target, 'targetLost', () => {
+    resetExperience(doc, session, true)
+  })
+
   bindEvent(session, leftButton, 'click', () => {
     session.itemIndex = (session.itemIndex - 1 + 3) % 3
     showPortfolioItem(doc, session.itemIndex)
@@ -484,6 +518,7 @@ export function initArV5Experience(doc: Document = document, options: InitArV5Op
 export function cleanupArV5Artifacts(doc: Document = document) {
   cleanupSession(activeSession)
   activeSession = null
+  resetExperience(doc)
   doc.querySelectorAll('.mindar-ui-overlay').forEach((el) => el.remove())
   doc.head.querySelectorAll('style').forEach((el) => {
     if (el.textContent?.includes('mindar-ui-overlay')) el.remove()
@@ -496,11 +531,10 @@ export function cleanupArV5Artifacts(doc: Document = document) {
 執行：`pnpm vitest run src/features/ar/ar-v5-interactions.test.ts`
 預期：全部 PASS。
 
-- [ ] **步驟 5: Commit**
+- [ ] **步驟 5: 檢查變更**
 
 ```bash
-git add src/features/ar/ar-v5-interactions.ts src/features/ar/ar-v5-interactions.test.ts
-git commit -m "feat(ar-v5): add DOM island interaction logic with tests"
+git diff -- src/features/ar/ar-v5-interactions.ts src/features/ar/ar-v5-interactions.test.ts
 ```
 
 ---
@@ -511,7 +545,7 @@ git commit -m "feat(ar-v5): add DOM island interaction logic with tests"
 - 建立：`src/features/ar/scene.html`
 - 建立：`src/features/ar/styles.css`
 
-靜態檔案，用 Vite `?raw` import。不需要測試。
+靜態檔案，用 Vite `?raw` import。由 factory 測試驗證有被注入，不單獨測 CSS 視覺。
 
 - [ ] **步驟 1: 建立 scene HTML**
 
@@ -542,8 +576,8 @@ git commit -m "feat(ar-v5): add DOM island interaction logic with tests"
     <img id="icon-left" src="/assets/ar-v3/icons/left.png" />
     <img id="icon-right" src="/assets/ar-v3/icons/right.png" />
     <img id="paintandquest-preview" src="/assets/ar-v3/portfolio/paintandquest-preview.png" />
-    <video id="paintandquest-video-mp4" autoplay="false" loop="true" src="/assets/ar-v3/portfolio/paintandquest.mp4"></video>
-    <video id="paintandquest-video-webm" autoplay="false" loop="true" src="/assets/ar-v3/portfolio/paintandquest.webm"></video>
+    <video id="paintandquest-video-mp4" loop="true" playsinline webkit-playsinline src="/assets/ar-v3/portfolio/paintandquest.mp4"></video>
+    <video id="paintandquest-video-webm" loop="true" playsinline webkit-playsinline src="/assets/ar-v3/portfolio/paintandquest.webm"></video>
     <img id="coffeemachine-preview" src="/assets/ar-v3/portfolio/coffeemachine-preview.png" />
     <img id="peak-preview" src="/assets/ar-v3/portfolio/peak-preview.png" />
     <a-asset-item id="avatarModel" src="/assets/ar-v3/models/softmind/scene.gltf"></a-asset-item>
@@ -660,11 +694,10 @@ git commit -m "feat(ar-v5): add DOM island interaction logic with tests"
 }
 ```
 
-- [ ] **步驟 3: Commit**
+- [ ] **步驟 3: 檢查變更**
 
 ```bash
-git add src/features/ar/scene.html src/features/ar/styles.css
-git commit -m "feat(ar-v5): add external scene HTML and CSS files"
+git diff -- src/features/ar/scene.html src/features/ar/styles.css
 ```
 
 ---
@@ -673,8 +706,24 @@ git commit -m "feat(ar-v5): add external scene HTML and CSS files"
 
 **檔案：**
 - 建立：`src/features/ar/createArV5Island.ts`
+- 建立：`src/features/ar/createArV5Island.test.ts`
 
-- [ ] **步驟 1: 建立 island 工廠**
+- [ ] **步驟 1: 寫 factory 測試**
+
+建立 `src/features/ar/createArV5Island.test.ts`，至少覆蓋：
+- `loadScript` 順序：A-Frame → A-Frame Extras → MindAR。
+- 注入 scene HTML 和 CSS，cleanup 後 container/head 回到乾淨狀態。
+- `cleanup` 可重複呼叫，不重複移除或 throw。
+- scene load 前 container detached 時，清掉 partial DOM/CSS，不呼叫 `onReady`。
+- script load 或 scene load 失敗時呼叫 `onError`，並清掉 partial DOM/CSS。
+- targetFound/targetLost callbacks 正確轉發，cleanup 後不再觸發。
+
+- [ ] **步驟 2: 跑測試確認失敗**
+
+執行：`pnpm vitest run src/features/ar/createArV5Island.test.ts`
+預期：FAIL — 模組 `./createArV5Island` 不存在。
+
+- [ ] **步驟 3: 建立 island 工廠**
 
 建立 `src/features/ar/createArV5Island.ts`：
 
@@ -699,6 +748,10 @@ function isMindArReady() {
   return Boolean(getArWindow().AFRAME?.components?.['mindar-image'])
 }
 
+function isAframeExtrasReady() {
+  return Boolean(getArWindow().AFRAME?.components?.['animation-mixer'])
+}
+
 function loadScript(src: string, isReady: () => boolean): Promise<void> {
   const existing = document.querySelector(`script[src="${src}"]`)
   if (existing) {
@@ -721,11 +774,16 @@ function loadScript(src: string, isReady: () => boolean): Promise<void> {
   })
 }
 
-function loadArV5Scripts(): Promise<void> {
-  return Promise.all([
-    loadScript('https://aframe.io/releases/1.4.2/aframe.min.js', isAframeReady),
-    loadScript('/vendor/mindar-image-aframe.prod.js', isMindArReady),
-  ]).then(() => undefined)
+async function loadArV5Scripts(): Promise<void> {
+  await loadScript('https://aframe.io/releases/1.4.2/aframe.min.js', isAframeReady)
+  await loadScript('https://cdn.jsdelivr.net/npm/aframe-extras@7.1.0/dist/aframe-extras.min.js', isAframeExtrasReady)
+  await loadScript('/vendor/mindar-image-aframe.prod.js', isMindArReady)
+}
+
+function assertContainerConnected(container: HTMLElement): void {
+  if (!container.isConnected) {
+    throw new Error('AR V5 container detached before initialization completed')
+  }
 }
 
 function registerArV5Components(): void {
@@ -765,13 +823,26 @@ function destroyArV5Scene(container: HTMLElement, style: HTMLStyleElement): void
   const sceneEl = container.querySelector('a-scene') as any
   if (sceneEl) {
     try { sceneEl.renderer?.setAnimationLoop?.(null) } catch {}
+    try { sceneEl.pause?.() } catch {}
     try {
       container.querySelectorAll('video').forEach((v) => {
-        (v as HTMLVideoElement).pause()
-        ;(v as HTMLVideoElement).src = ''
+        const video = v as HTMLVideoElement
+        video.pause()
+        if (video.srcObject instanceof MediaStream) {
+          video.srcObject.getTracks().forEach((track) => track.stop())
+          video.srcObject = null
+        }
+        video.src = ''
       })
     } catch {}
   }
+  document.querySelectorAll('video').forEach((v) => {
+    const video = v as HTMLVideoElement
+    if (video.srcObject instanceof MediaStream) {
+      video.srcObject.getTracks().forEach((track) => track.stop())
+      video.srcObject = null
+    }
+  })
   while (container.firstChild) container.removeChild(container.firstChild)
   style.remove()
 }
@@ -788,20 +859,21 @@ export async function createArV5Island(
   container: HTMLElement,
   callbacks: ArV5IslandCallbacks = {},
 ): Promise<() => void> {
-  let disposed = false
   let styleEl: HTMLStyleElement | null = null
   let interactionCleanup: (() => void) | null = null
+  let cleaned = false
 
   try {
+    assertContainerConnected(container)
     await loadArV5Scripts()
-    if (disposed) return () => {}
+    assertContainerConnected(container)
 
     registerArV5Components()
     styleEl = injectArV5Scene(container)
-    if (disposed) { destroyArV5Scene(container, styleEl); return () => {} }
+    assertContainerConnected(container)
 
     await waitForArV5SceneLoad(container)
-    if (disposed) { destroyArV5Scene(container, styleEl); return () => {} }
+    assertContainerConnected(container)
 
     const target = container.querySelector('#ar-v5-target')
     const onTargetFound = () => callbacks.onTargetFound?.()
@@ -813,6 +885,8 @@ export async function createArV5Island(
     callbacks.onReady?.()
 
     return () => {
+      if (cleaned) return
+      cleaned = true
       interactionCleanup()
       target?.removeEventListener('targetFound', onTargetFound)
       target?.removeEventListener('targetLost', onTargetLost)
@@ -822,17 +896,21 @@ export async function createArV5Island(
   } catch (error) {
     if (styleEl) destroyArV5Scene(container, styleEl)
     cleanupArV5Artifacts(document)
-    callbacks.onError?.(error)
+    if (container.isConnected) callbacks.onError?.(error)
     return () => {}
   }
 }
 ```
 
-- [ ] **步驟 2: Commit**
+- [ ] **步驟 4: 跑 factory 測試確認通過**
+
+執行：`pnpm vitest run src/features/ar/createArV5Island.test.ts`
+預期：全部 PASS。
+
+- [ ] **步驟 5: 檢查變更**
 
 ```bash
-git add src/features/ar/createArV5Island.ts
-git commit -m "feat(ar-v5): add island factory with DOMParser injection"
+git diff -- src/features/ar/createArV5Island.ts src/features/ar/createArV5Island.test.ts
 ```
 
 ---
@@ -841,7 +919,9 @@ git commit -m "feat(ar-v5): add island factory with DOMParser injection"
 
 **檔案：**
 - 建立：`src/features/ar/MindARScene.tsx`
+- 建立：`src/features/ar/MindARScene.test.tsx`
 - 建立：`src/pages/ProductARPage.tsx`
+- 建立：`src/pages/ProductARPage.test.tsx`
 - 修改：`src/router.tsx`
 
 - [ ] **步驟 1: 建立 React wrapper**
@@ -959,7 +1039,20 @@ export function ProductARPage() {
 }
 ```
 
-- [ ] **步驟 3: 註冊路由**
+- [ ] **步驟 3: 建立 wrapper/page 測試**
+
+建立 `src/features/ar/MindARScene.test.tsx`，至少覆蓋：
+- mount 時呼叫 `createArV5Island` 並傳入 container。
+- unmount 後呼叫 island cleanup。
+- promise resolve 前 unmount 時，resolve 後仍會呼叫 cleanup。
+- callback props rerender 後不重新初始化，但觸發 captured callback 時使用最新 prop。
+
+建立 `src/pages/ProductARPage.test.tsx`，至少覆蓋：
+- 初始顯示 `initializing`。
+- `onReady/onTargetFound/onTargetLost/onError` 會更新 status/error。
+- 返回按鈕導向 `/ar`。
+
+- [ ] **步驟 4: 註冊路由**
 
 修改 `src/router.tsx` — 新增 import 和路由：
 
@@ -975,21 +1068,20 @@ import { ProductARPage } from './pages/ProductARPage'
 { path: '/product-ar', element: <ProductARPage /> },
 ```
 
-- [ ] **步驟 4: 跑全部測試**
+- [ ] **步驟 5: 跑全部測試**
 
 執行：`pnpm vitest run`
 預期：全部通過。
 
-- [ ] **步驟 5: 跑 typecheck**
+- [ ] **步驟 6: 跑 typecheck**
 
 執行：`pnpm tsc --noEmit`
 預期：無錯誤。
 
-- [ ] **步驟 6: Commit**
+- [ ] **步驟 7: 檢查變更**
 
 ```bash
-git add src/features/ar/MindARScene.tsx src/pages/ProductARPage.tsx src/router.tsx
-git commit -m "feat(ar-v5): add MindARScene wrapper, ProductARPage, and /product-ar route"
+git diff -- src/features/ar/MindARScene.tsx src/features/ar/MindARScene.test.tsx src/pages/ProductARPage.tsx src/pages/ProductARPage.test.tsx src/router.tsx
 ```
 
 ---
@@ -1018,8 +1110,8 @@ git commit -m "feat(ar-v5): add MindARScene wrapper, ProductARPage, and /product
 - [ ] 點 info buttons → text 更新
 - [ ] 點 web text → 導向 softmind.tech
 - [ ] 點 preview button → video 播放
-- [ ] 移開相機 → status 變 "lost"，內容隱藏
-- [ ] 重新對準 target → 體驗重新觸發（或保持已啟動狀態）
+- [ ] 移開相機 → status 變 "lost"，內容隱藏，影片停止
+- [ ] 重新對準 target → 體驗重新觸發啟動序列
 - [ ] 按返回鍵 → 回到 /ar
 - [ ] 重新進入 /product-ar → 相機正常啟動（無黑屏、無殘留 scene）
 - [ ] 重複進出 3 次，確認無 memory leak 或 camera lock
@@ -1031,7 +1123,7 @@ git commit -m "feat(ar-v5): add MindARScene wrapper, ProductARPage, and /product
 - [ ] 無重複 A-Frame scenes
 - [ ] Cleanup 正確銷毀第一次 mount 後才啟動第二次
 
-如果 StrictMode 造成問題，先記錄但不修 — production build 不會有這問題。
+如果 StrictMode 造成重複 camera streams 或殘留 scene，必須先修正 cancellation/cleanup；不能只因 production build 不 double-mount 就略過。
 
 ---
 
@@ -1050,8 +1142,8 @@ git commit -m "feat(ar-v5): add MindARScene wrapper, ProductARPage, and /product
 
 ## 風險緩解
 
-1. **Camera 殘留**：`destroyArV5Scene` 停止 renderer + 清空 videos + 移除所有子節點。如果 camera LED 仍亮，需額外停止 `getUserMedia` stream tracks。
+1. **Camera 殘留**：`destroyArV5Scene` 停止 renderer/runtime、停止 video `srcObject` media tracks、清空 videos、移除所有子節點。
 2. **A-Frame 全域狀態**：`AFRAME.registerComponent` 有 guard 防重複。Scene 銷毀靠 `removeChild` 移除所有 A-Frame 管理的 DOM。
-3. **StrictMode double-mount**：`MindARScene` 的 `cancelled` flag 確保第一次 mount 的 cleanup 在第二次 mount 前執行。
-4. **Script 重複載入**：`loadScript` 檢查現有 `<script>` 標籤，已載入則直接 resolve。
+3. **StrictMode double-mount**：`MindARScene` cleanup + factory `container.isConnected` 檢查避免 unmount 後繼續注入 scene。
+4. **Script 重複載入**：`loadScript` 檢查現有 `<script>` 標籤，已載入則直接 resolve；載入順序固定為 A-Frame → A-Frame Extras → MindAR。
 5. **`?raw` import 型別**：Vite 原生支援。如果 TypeScript 抱怨，加 `vite/client` 型別宣告或 `*.html?raw` 宣告。
