@@ -32,17 +32,20 @@ type MindArModule = {
 
 function disposeObject(object: THREE.Object3D) {
   object.traverse((child) => {
-    const mesh = child as THREE.Mesh
-    mesh.geometry?.dispose()
+    if (child instanceof THREE.Mesh) {
+      child.geometry?.dispose()
 
-    const material = mesh.material
-    if (Array.isArray(material)) {
-      material.forEach(disposeMaterial)
-      return
-    }
+      const material = child.material
+      if (Array.isArray(material)) {
+        material.forEach(disposeMaterial)
+        return
+      }
 
-    if (material) {
-      disposeMaterial(material)
+      if (material) {
+        disposeMaterial(material)
+      }
+    } else if (child instanceof THREE.Light) {
+      child.dispose?.()
     }
   })
 }
@@ -95,24 +98,28 @@ export async function createMindArV4Experience(
   let videoPlane: THREE.Mesh | undefined
   const buttonMeshes: THREE.Mesh[] = []
 
+  const raycaster = new THREE.Raycaster()
+  const pointer = new THREE.Vector2()
+
   const onPointerDown = (event: PointerEvent) => {
-    if (!mindarThree || !anchor) return
+    if (!mindarThree || !anchor || !anchor.group.visible) return
     const { container } = options
     const rect = container.getBoundingClientRect()
-    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
 
-    const raycaster = new THREE.Raycaster()
-    raycaster.setFromCamera(new THREE.Vector2(x, y), mindarThree.camera)
+    raycaster.setFromCamera(pointer, mindarThree.camera)
 
     const intersects = raycaster.intersectObjects(anchor.group.children, true)
     if (intersects.length > 0) {
       const clickedObject = intersects[0]?.object
-      if (clickedObject?.userData.isVideo) {
-        void video?.play().catch(() => undefined)
-        options.onAction?.('play-video')
-      } else if (clickedObject?.userData.actionId) {
-        options.onAction?.(clickedObject.userData.actionId)
+      if (clickedObject && clickedObject.visible) {
+        if (clickedObject.userData.isVideo) {
+          void video?.play().catch(() => undefined)
+          options.onAction?.('play-video')
+        } else if (clickedObject.userData.actionId) {
+          options.onAction?.(clickedObject.userData.actionId)
+        }
       }
     }
   }
@@ -129,7 +136,6 @@ export async function createMindArV4Experience(
       video.src = ''
       video.load()
     }
-    videoTexture?.dispose()
 
     if (model) {
       disposeObject(model)
@@ -145,6 +151,9 @@ export async function createMindArV4Experience(
       disposeObject(button)
       anchor?.group.remove(button)
     })
+
+    if (ambientLight) disposeObject(ambientLight)
+    if (directionalLight) disposeObject(directionalLight)
 
     if (mindarThree && ambientLight && directionalLight) {
       mindarThree.scene.remove(ambientLight, directionalLight)
@@ -218,6 +227,10 @@ export async function createMindArV4Experience(
       new GLTFLoader().load(
         options.assets.model,
         (gltf) => {
+          if (cleaned || isDetachedAfterUse()) {
+            disposeObject(gltf.scene)
+            return
+          }
           try {
             resolve(gltf.scene)
           } catch (error) {
@@ -228,7 +241,8 @@ export async function createMindArV4Experience(
         reject,
       )
     })
-    if (isDetachedAfterUse()) {
+    if (cleaned || isDetachedAfterUse()) {
+      if (model) disposeObject(model)
       cleanup()
       return { cleanup }
     }
