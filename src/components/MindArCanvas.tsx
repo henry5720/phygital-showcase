@@ -110,9 +110,17 @@ export function MindArCanvas({
       // await start() — it's async; setAnimationLoop only after camera is ready
       await mindarThree.start()
 
+      function cleanupMindarDom() {
+        document.querySelectorAll('.mindar-ui-overlay').forEach(el => el.remove())
+        document.head.querySelectorAll('style').forEach(el => {
+          if (el.textContent?.includes('mindar-ui-overlay')) el.remove()
+        })
+      }
+
       if (stopped) {
         renderer.setAnimationLoop(null)
         mindarThree.stop()
+        cleanupMindarDom()
         return
       }
 
@@ -140,6 +148,7 @@ export function MindArCanvas({
         scene.remove(ambientLight)
         scene.remove(dir)
         mindarThree.stop()
+        cleanupMindarDom()
       }
     })
 
