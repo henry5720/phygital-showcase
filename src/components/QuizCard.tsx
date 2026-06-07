@@ -30,24 +30,21 @@ export function QuizCard({ question, questionNumber, total, onSelect }: Props) {
 
   return (
     <div ref={cardRef} className="w-full max-w-sm mx-auto">
-      <p className="text-sm mb-3 opacity-50" style={{ color: 'var(--color-text)' }}>
+      <p className="text-sm mb-3 opacity-50 text-foreground">
         {questionNumber} / {total}
       </p>
       <div
-        className="w-full h-0.5 rounded-full mb-8"
-        style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+        className="w-full h-0.5 rounded-full mb-8 bg-white/10"
       >
         <div
-          className="h-0.5 rounded-full transition-all duration-500"
+          className="h-0.5 rounded-full transition-all duration-500 bg-primary"
           style={{
-            backgroundColor: 'var(--color-primary)',
             width: `${(questionNumber / total) * 100}%`,
           }}
         />
       </div>
       <h2
-        className="text-xl font-semibold mb-6 leading-snug"
-        style={{ color: 'var(--color-text)' }}
+        className="text-xl font-semibold mb-6 leading-snug text-foreground"
       >
         {question.text}
       </h2>
@@ -56,12 +53,7 @@ export function QuizCard({ question, questionNumber, total, onSelect }: Props) {
           <button
             key={option.text}
             onClick={() => onSelect(option)}
-            className="py-3.5 px-5 rounded-2xl text-left border cursor-pointer"
-            style={{
-              borderColor: 'var(--color-primary)',
-              color: 'var(--color-text)',
-              backgroundColor: 'transparent',
-            }}
+            className="py-3.5 px-5 rounded-2xl text-left border cursor-pointer border-primary text-foreground bg-transparent"
           >
             {option.text}
           </button>

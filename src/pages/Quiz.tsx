@@ -25,12 +25,10 @@ export function Quiz() {
 
   return (
     <div
-      className="min-h-dvh flex flex-col items-center justify-center px-6 py-16"
-      style={{ backgroundColor: 'var(--color-bg)' }}
+      className="min-h-dvh flex flex-col items-center justify-center px-6 py-16 bg-background"
     >
       <h1
-        className="text-xl font-bold text-center mb-10"
-        style={{ color: 'var(--color-primary)' }}
+        className="text-xl font-bold text-center mb-10 text-primary"
       >
         {title}
       </h1>

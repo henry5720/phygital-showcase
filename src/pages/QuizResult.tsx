@@ -12,14 +12,12 @@ export function QuizResult() {
   if (!result) {
     return (
       <div
-        className="min-h-dvh flex flex-col items-center justify-center gap-4"
-        style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-text)' }}
+        className="min-h-dvh flex flex-col items-center justify-center gap-4 bg-background text-foreground"
       >
         <p>找不到結果，請重新測驗。</p>
         <button
           onClick={() => navigate('/quiz')}
-          className="underline opacity-60 cursor-pointer"
-          style={{ color: 'var(--color-text)' }}
+          className="underline opacity-60 cursor-pointer text-foreground"
         >
           重新測驗
         </button>
@@ -29,8 +27,7 @@ export function QuizResult() {
 
   return (
     <div
-      className="min-h-dvh flex flex-col justify-center px-6 py-16"
-      style={{ backgroundColor: 'var(--color-bg)' }}
+      className="min-h-dvh flex flex-col justify-center px-6 py-16 bg-background"
     >
       <ResultCard
         result={result}

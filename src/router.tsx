@@ -40,7 +40,7 @@ export const router = createBrowserRouter([
     path: '/product',
     lazy: async () => ({
       Component: () => (
-        <div style={{ color: '#fff', padding: '2rem' }}>
+        <div className="text-white p-8">
           Product page — Plan 3
         </div>
       ),

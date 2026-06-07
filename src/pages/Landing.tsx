@@ -41,39 +41,34 @@ export function Landing() {
   return (
     <div
       ref={rootRef}
-      className="min-h-dvh flex flex-col items-center justify-center px-6"
-      style={{ backgroundColor: 'var(--color-bg)' }}
+      className="min-h-dvh flex flex-col items-center justify-center px-6 bg-background"
     >
       <div className="landing-hero text-center mb-14">
         <h1
-          className="text-5xl font-bold tracking-tight mb-3"
-          style={{ color: 'var(--color-primary)' }}
+          className="text-5xl font-bold tracking-tight mb-3 text-primary"
         >
           {config.brand.name}
         </h1>
-        <p className="text-base opacity-70" style={{ color: 'var(--color-text)' }}>
+        <p className="text-base opacity-70 text-foreground">
           {config.brand.subtitle}
         </p>
       </div>
 
       <div className="flex flex-col gap-4 w-full max-w-xs">
         <button
-          className="cta-btn py-4 px-8 rounded-full font-semibold text-base cursor-pointer border-2"
-          style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)', backgroundColor: 'transparent' }}
+          className="cta-btn py-4 px-8 rounded-full font-semibold text-base cursor-pointer border-2 border-primary text-primary bg-transparent"
           onClick={() => navigate('/ar/guide')}
         >
           WebAR 體驗
         </button>
         <button
-          className="cta-btn py-4 px-8 rounded-full font-semibold text-base cursor-pointer"
-          style={{ backgroundColor: 'var(--color-primary)', color: 'var(--color-bg)' }}
+          className="cta-btn py-4 px-8 rounded-full font-semibold text-base cursor-pointer bg-primary text-background"
           onClick={() => navigate('/quiz')}
         >
           互動測驗
         </button>
         <button
-          className="cta-btn py-4 px-8 rounded-full font-semibold text-base cursor-pointer border-2"
-          style={{ borderColor: '#22c55e', color: '#22c55e', backgroundColor: 'transparent' }}
+          className="cta-btn py-4 px-8 rounded-full font-semibold text-base cursor-pointer border-2 border-line text-line bg-transparent"
           onClick={() => { window.location.href = config.brand.line.joinUrl }}
         >
           加入 LINE@

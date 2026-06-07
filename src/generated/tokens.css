@@ -1,0 +1,11 @@
+/**
+ * Do not edit directly, this file was auto-generated.
+ */
+
+:root {
+  --primary: #D4AF37; /** 品牌主色，CTA 和強調色 */
+  --primary-foreground: #051129; /** 主色上的文字色 */
+  --background: #051129; /** 頁面背景色 */
+  --foreground: #FFFFFF; /** 主要文字色 */
+  --line: #22c55e; /** LINE 品牌綠色 */
+}

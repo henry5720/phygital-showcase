@@ -46,18 +46,9 @@ export interface BrandConfig {
   }
 }
 
-// ─── Design Token Layer ───
-
-export interface DesignTokens {
-  primaryColor: string
-  backgroundColor: string
-  textColor: string
-}
-
 // ─── Composed Config ───
 
 export interface ProductConfig {
-  tokens: DesignTokens
   brand: BrandConfig
   quiz: QuizConfig
 }
