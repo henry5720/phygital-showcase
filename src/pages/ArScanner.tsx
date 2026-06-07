@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, Link } from 'react-router'
 import { ROUTES } from '@/config/routes'
 import { MindARScene } from '../features/ar/MindARScene'
 
@@ -16,20 +16,20 @@ export function ArScanner() {
         onReady={() => setStatus('scanning')}
         onTargetFound={() => setStatus('tracking')}
         onTargetLost={() => setStatus('lost')}
-        onError={(err) => { setStatus('error'); setError(String(err)) }}
+        onError={(err) => { setStatus('error'); setError(err instanceof Error ? err.message : String(err)) }}
         navigate={navigate}
       />
 
       <div className="absolute inset-0 z-50 pointer-events-none flex flex-col">
         <div className="p-6 flex justify-between items-start pointer-events-auto">
-          <button
-            onClick={() => navigate(ROUTES.AR_GUIDE)}
-            className="px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-sm font-medium hover:bg-white/20 transition-colors cursor-pointer"
+          <Link
+            to={ROUTES.AR_GUIDE}
+            className="px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-sm font-medium hover:bg-white/20 transition-colors"
           >
             ← 返回
-          </button>
+          </Link>
           <div className="text-right">
-            <h1 className="text-xl font-bold tracking-tight">Product AR</h1>
+            <h1 className="text-xl font-bold tracking-tight">產品 AR</h1>
             <p className="text-xs opacity-50">DOM Island</p>
           </div>
         </div>

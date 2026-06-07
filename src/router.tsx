@@ -1,9 +1,11 @@
 import { createBrowserRouter } from 'react-router'
 import { ROUTES } from './config/routes'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 export const router = createBrowserRouter([
   {
     path: ROUTES.HOME,
+    errorElement: <ErrorBoundary />,
     lazy: async () => {
       const { Landing } = await import('./pages/Landing')
       return { Component: Landing }
@@ -11,6 +13,7 @@ export const router = createBrowserRouter([
   },
   {
     path: ROUTES.AR_GUIDE,
+    errorElement: <ErrorBoundary />,
     lazy: async () => {
       const { ArGuide } = await import('./pages/ArGuide')
       return { Component: ArGuide }
@@ -18,6 +21,7 @@ export const router = createBrowserRouter([
   },
   {
     path: ROUTES.AR_SCANNER,
+    errorElement: <ErrorBoundary />,
     lazy: async () => {
       const { ArScanner } = await import('./pages/ArScanner')
       return { Component: ArScanner }
@@ -25,6 +29,7 @@ export const router = createBrowserRouter([
   },
   {
     path: ROUTES.QUIZ,
+    errorElement: <ErrorBoundary />,
     lazy: async () => {
       const { Quiz } = await import('./pages/Quiz')
       return { Component: Quiz }
@@ -32,6 +37,7 @@ export const router = createBrowserRouter([
   },
   {
     path: ROUTES.QUIZ_RESULT,
+    errorElement: <ErrorBoundary />,
     lazy: async () => {
       const { QuizResult } = await import('./pages/QuizResult')
       return { Component: QuizResult }
@@ -39,12 +45,10 @@ export const router = createBrowserRouter([
   },
   {
     path: ROUTES.PRODUCT,
-    lazy: async () => ({
-      Component: () => (
-        <div className="text-white p-8">
-          Product page — Plan 3
-        </div>
-      ),
-    }),
+    errorElement: <ErrorBoundary />,
+    lazy: async () => {
+      const { Product } = await import('./pages/Product')
+      return { Component: Product }
+    },
   },
 ])

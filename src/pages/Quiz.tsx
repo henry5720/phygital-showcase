@@ -1,17 +1,25 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { ROUTES } from '@/config/routes'
-import { useConfig } from '../hooks/useConfig'
+import { getConfig } from '../hooks/getConfig'
 import { calculateResult } from '../lib/quiz'
 import { QuizCard } from '../components/QuizCard'
 import type { QuizOption } from '../config/types'
 
 export function Quiz() {
-  const config = useConfig()
+  const config = getConfig()
   const navigate = useNavigate()
   const { questions, title } = config.quiz
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<QuizOption[]>([])
+
+  if (questions.length === 0) {
+    return (
+      <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-background text-foreground">
+        <p>測驗題目尚未載入。</p>
+      </div>
+    )
+  }
 
   function handleSelect(option: QuizOption) {
     const newAnswers = [...answers, option]

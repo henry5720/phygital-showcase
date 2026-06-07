@@ -1,11 +1,10 @@
 import { useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import { ROUTES } from '@/config/routes'
-import { useConfig } from '../hooks/useConfig'
+import { getConfig } from '../hooks/getConfig'
 
 export function ArGuide() {
-  const config = useConfig()
-  const navigate = useNavigate()
+  const config = getConfig()
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -40,18 +39,18 @@ export function ArGuide() {
         <p className="text-xs opacity-30 text-foreground">
           此功能需要相機權限。
         </p>
-        <button
-          onClick={() => navigate(ROUTES.AR_SCANNER)}
-          className="w-full py-4 px-8 rounded-full font-semibold text-base cursor-pointer mt-4 bg-primary text-background"
+        <Link
+          to={ROUTES.AR_SCANNER}
+          className="w-full py-4 px-8 rounded-full font-semibold text-base cursor-pointer mt-4 bg-primary text-background text-center"
         >
           開始體驗 AR
-        </button>
-        <button
-          onClick={() => navigate(ROUTES.HOME)}
+        </Link>
+        <Link
+          to={ROUTES.HOME}
           className="underline opacity-40 text-sm cursor-pointer text-foreground"
         >
           返回首頁
-        </button>
+        </Link>
       </div>
     </div>
   )

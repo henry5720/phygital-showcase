@@ -1,10 +1,12 @@
-"use client"
-
-import * as React from "react"
+import { useState, useId } from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
+
+const isTouchDevice =
+  typeof window !== 'undefined' &&
+  ("ontouchstart" in window || navigator.maxTouchPoints > 0)
 
 const buttonVariants = cva(
   "inline-flex items-center cursor-pointer justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
@@ -36,28 +38,32 @@ const buttonVariants = cva(
   }
 )
 
-export interface ButtonProps
+interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button"
-    return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref}
-        {...props}
-      />
-    )
-  }
-)
-Button.displayName = "Button"
+function Button({
+  className,
+  variant,
+  size,
+  asChild = false,
+  ref,
+  ...props
+}: ButtonProps & { ref?: React.Ref<HTMLButtonElement> }) {
+  const Comp = asChild ? Slot : "button"
+  return (
+    <Comp
+      className={cn(buttonVariants({ variant, size, className }))}
+      ref={ref}
+      {...props}
+    />
+  )
+}
 
 const liquidbuttonVariants = cva(
-  "inline-flex items-center transition-colors justify-center cursor-pointer gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  "inline-flex items-center justify-center cursor-pointer gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,box-shadow] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
     variants: {
       variant: {
@@ -93,48 +99,50 @@ function LiquidButton({
   size,
   asChild = false,
   children,
+  ref,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof liquidbuttonVariants> & {
     asChild?: boolean
+    ref?: React.Ref<HTMLButtonElement>
   }) {
   const Comp = asChild ? Slot : "button"
+  const filterId = useId()
 
   return (
-    <>
-      <Comp
-        data-slot="button"
-        className={cn(
-          "relative",
-          liquidbuttonVariants({ variant, size, className })
-        )}
-        {...props}
-      >
-        <div className="absolute top-0 left-0 z-0 h-full w-full rounded-full 
-            shadow-[0_0_6px_rgba(0,0,0,0.03),0_2px_6px_rgba(0,0,0,0.08),inset_3px_3px_0.5px_-3px_rgba(0,0,0,0.9),inset_-3px_-3px_0.5px_-3px_rgba(0,0,0,0.85),inset_1px_1px_1px_-0.5px_rgba(0,0,0,0.6),inset_-1px_-1px_1px_-0.5px_rgba(0,0,0,0.6),inset_0_0_6px_6px_rgba(0,0,0,0.12),inset_0_0_2px_2px_rgba(0,0,0,0.06),0_0_12px_rgba(255,255,255,0.15)] 
-        transition-all 
-        dark:shadow-[0_0_8px_rgba(0,0,0,0.03),0_2px_6px_rgba(0,0,0,0.08),inset_3px_3px_0.5px_-3.5px_rgba(255,255,255,0.09),inset_-3px_-3px_0.5px_-3.5px_rgba(255,255,255,0.85),inset_1px_1px_1px_-0.5px_rgba(255,255,255,0.6),inset_-1px_-1px_1px_-0.5px_rgba(255,255,255,0.6),inset_0_0_6px_6px_rgba(255,255,255,0.12),inset_0_0_2px_2px_rgba(255,255,255,0.06),0_0_12px_rgba(0,0,0,0.15)]" />
-        <div
-          className="absolute top-0 left-0 isolate -z-10 h-full w-full overflow-hidden rounded-md"
-          style={{ backdropFilter: 'url("#container-glass")' }}
-        />
+    <Comp
+      ref={ref}
+      data-slot="button"
+      className={cn(
+        "relative",
+        liquidbuttonVariants({ variant, size, className })
+      )}
+      {...props}
+    >
+      <div className="absolute top-0 left-0 z-0 h-full w-full rounded-full
+          shadow-[0_0_6px_rgba(0,0,0,0.03),0_2px_6px_rgba(0,0,0,0.08),inset_3px_3px_0.5px_-3px_rgba(0,0,0,0.9),inset_-3px_-3px_0.5px_-3px_rgba(0,0,0,0.85),inset_1px_1px_1px_-0.5px_rgba(0,0,0,0.6),inset_-1px_-1px_1px_-0.5px_rgba(0,0,0,0.6),inset_0_0_6px_6px_rgba(0,0,0,0.12),inset_0_0_2px_2px_rgba(0,0,0,0.06),0_0_12px_rgba(255,255,255,0.15)]
+          transition-all
+          dark:shadow-[0_0_8px_rgba(0,0,0,0.03),0_2px_6px_rgba(0,0,0,0.08),inset_3px_3px_0.5px_-3.5px_rgba(255,255,255,0.09),inset_-3px_-3px_0.5px_-3.5px_rgba(255,255,255,0.85),inset_1px_1px_1px_-0.5px_rgba(255,255,255,0.6),inset_-1px_-1px_1px_-0.5px_rgba(255,255,255,0.6),inset_0_0_6px_6px_rgba(255,255,255,0.12),inset_0_0_2px_2px_rgba(255,255,255,0.06),0_0_12px_rgba(0,0,0,0.15)]" />
+      <div
+        className="absolute top-0 left-0 isolate -z-10 h-full w-full overflow-hidden rounded-md"
+        style={{ backdropFilter: `url("#${filterId}")` }}
+      />
 
-        <div className="pointer-events-none z-10 ">
-          {children}
-        </div>
-        <GlassFilter />
-      </Comp>
-    </>
+      <div className="pointer-events-none z-10 ">
+        {children}
+      </div>
+      <GlassFilter filterId={filterId} />
+    </Comp>
   )
 }
 
 
-function GlassFilter() {
+function GlassFilter({ filterId }: { filterId: string }) {
   return (
     <svg className="hidden">
       <defs>
         <filter
-          id="container-glass"
+          id={filterId}
           x="0%"
           y="0%"
           width="100%"
@@ -236,7 +244,6 @@ const metalButtonVariants = (
   variant: ColorVariant = "default",
   isPressed: boolean,
   isHovered: boolean,
-  isTouchDevice: boolean,
 ) => {
   const colors = colorVariants[variant];
   const transitionStyle = "all 250ms cubic-bezier(0.1, 0.4, 0.2, 1)";
@@ -297,20 +304,21 @@ const ShineEffect = ({ isPressed }: { isPressed: boolean }) => {
   );
 };
 
-const MetalButton = React.forwardRef<
-  HTMLButtonElement,
-  MetalButtonProps
->(({ children, className, variant = "default", ...props }, ref) => {
-  const [isPressed, setIsPressed] = React.useState(false);
-  const [isHovered, setIsHovered] = React.useState(false);
-  const isTouchDevice = typeof window !== 'undefined' && ("ontouchstart" in window || navigator.maxTouchPoints > 0);
+function MetalButton({
+  children,
+  className,
+  variant = "default",
+  ref,
+  ...props
+}: MetalButtonProps & { ref?: React.Ref<HTMLButtonElement> }) {
+  const [isPressed, setIsPressed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const buttonText = children || "Button";
   const variants = metalButtonVariants(
     variant,
     isPressed,
     isHovered,
-    isTouchDevice,
   );
 
   const handleInternalMouseDown = () => {
@@ -362,8 +370,6 @@ const MetalButton = React.forwardRef<
       </button>
     </div>
   );
-});
-
-MetalButton.displayName = "MetalButton";
+}
 
 export { Button, LiquidButton, MetalButton, buttonVariants, liquidbuttonVariants }

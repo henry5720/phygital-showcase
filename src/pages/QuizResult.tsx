@@ -1,12 +1,12 @@
-import { useParams, useNavigate } from 'react-router'
+import { useParams } from 'react-router'
+import { Link } from 'react-router'
 import { ROUTES } from '@/config/routes'
-import { useConfig } from '../hooks/useConfig'
+import { getConfig } from '../hooks/getConfig'
 import { ResultCard } from '../components/ResultCard'
 
 export function QuizResult() {
   const { type } = useParams<{ type: string }>()
-  const config = useConfig()
-  const navigate = useNavigate()
+  const config = getConfig()
 
   const result = type ? config.quiz.results[type] : null
 
@@ -16,12 +16,12 @@ export function QuizResult() {
         className="min-h-dvh flex flex-col items-center justify-center gap-4 bg-background text-foreground"
       >
         <p>找不到結果，請重新測驗。</p>
-        <button
-          onClick={() => navigate(ROUTES.QUIZ)}
+        <Link
+          to={ROUTES.QUIZ}
           className="underline opacity-60 cursor-pointer text-foreground"
         >
           重新測驗
-        </button>
+        </Link>
       </div>
     )
   }

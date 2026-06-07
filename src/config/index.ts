@@ -1,8 +1,8 @@
 import quizRaw from './quiz/fizzt.json'
 import { brandConfig } from './brand/fizzt'
-import type { ProductConfig, QuizConfig } from './types'
+import type { ProductConfig } from './types'
 
 export const config: ProductConfig = {
   brand: brandConfig,
-  quiz: quizRaw as QuizConfig,
+  quiz: quizRaw satisfies ProductConfig['quiz'],
 }

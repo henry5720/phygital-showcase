@@ -13,6 +13,27 @@ type InitArV5Options = {
   navigate?: (url: string) => void
 }
 
+const AVATAR_Z_START = -0.3
+const AVATAR_Z_END = 0.3
+const AVATAR_Z_STEP = 0.008
+const AVATAR_Y = -0.25
+
+const PORTFOLIO_Y_START = 0
+const PORTFOLIO_Y_END = 0.6
+const PORTFOLIO_Y_STEP = 0.008
+const PORTFOLIO_Z = -0.01
+const PORTFOLIO_ITEM_COUNT = 3
+
+const INFO_STAGGER_DELAY = 300
+const PORTFOLIO_SETTLE_DELAY = 500
+const ANIMATION_INTERVAL = 10
+
+const AR_SCENE_LOAD_TIMEOUT = 10_000
+
+const BRAND_NAME = '植酌 Fizz\'t'
+const BRAND_TAGLINE = '鳳梨發酵酵素飲'
+const BRAND_URL = 'https://line.me/R/ti/p/@fizzt_crm'
+
 let activeSession: ArV5Session | null = null
 
 function setVisible(el: Element | null, visible: boolean) {
@@ -26,7 +47,7 @@ function setPosition(el: Element | null, value: string) {
 }
 
 function showPortfolioItem(doc: Document, index: number) {
-  for (let i = 0; i <= 2; i += 1) {
+  for (let i = 0; i < PORTFOLIO_ITEM_COUNT; i += 1) {
     setVisible(doc.getElementById(`portfolio-item${i}`), i === index)
   }
 }
@@ -101,8 +122,8 @@ function resetExperience(doc: Document, session?: ArV5Session | null, resetActiv
   doc.getElementById('text')?.setAttribute('value', '')
   doc.getElementById('paintandquest-video-link')?.removeAttribute('src')
   showPortfolioItem(doc, 0)
-  setPosition(doc.getElementById('portfolio-panel'), '0 0 -0.01')
-  setPosition(doc.getElementById('avatar'), '0 -0.25 -0.3')
+  setPosition(doc.getElementById('portfolio-panel'), `0 0 ${PORTFOLIO_Z}`)
+  setPosition(doc.getElementById('avatar'), `0 ${AVATAR_Y} ${AVATAR_Z_START}`)
   resetVideo(doc.getElementById('paintandquest-video-mp4') as HTMLVideoElement | null)
   resetVideo(doc.getElementById('paintandquest-video-webm') as HTMLVideoElement | null)
 }
@@ -110,39 +131,39 @@ function resetExperience(doc: Document, session?: ArV5Session | null, resetActiv
 function showAvatar(session: ArV5Session, doc: Document, onDone: () => void) {
   const avatar = doc.getElementById('avatar')
   if (!avatar) { onDone(); return }
-  let z = -0.3
+  let z = AVATAR_Z_START
   const id = scheduleInterval(session, () => {
-    z += 0.008
-    if (z >= 0.3) {
+    z += AVATAR_Z_STEP
+    if (z >= AVATAR_Z_END) {
       window.clearInterval(id)
       onDone()
     }
-    setPosition(avatar, `0 -0.25 ${z}`)
-  }, 10)
+    setPosition(avatar, `0 ${AVATAR_Y} ${z}`)
+  }, ANIMATION_INTERVAL)
 }
 
 function showPortfolio(session: ArV5Session, doc: Document, onDone: () => void) {
   const portfolio = doc.getElementById('portfolio-panel')
   if (!portfolio) { onDone(); return }
-  let y = 0
+  let y = PORTFOLIO_Y_START
   setVisible(portfolio, true)
   const id = scheduleInterval(session, () => {
-    y += 0.008
-    if (y >= 0.6) {
+    y += PORTFOLIO_Y_STEP
+    if (y >= PORTFOLIO_Y_END) {
       window.clearInterval(id)
       setVisible(doc.getElementById('portfolio-left-button'), true)
       setVisible(doc.getElementById('portfolio-right-button'), true)
-      scheduleTimeout(session, onDone, 500)
+      scheduleTimeout(session, onDone, PORTFOLIO_SETTLE_DELAY)
     }
-    setPosition(portfolio, `0 ${y} -0.01`)
-  }, 10)
+    setPosition(portfolio, `0 ${y} ${PORTFOLIO_Z}`)
+  }, ANIMATION_INTERVAL)
 }
 
 function showInfo(session: ArV5Session, doc: Document) {
   setVisible(doc.getElementById('profile-button'), true)
-  scheduleTimeout(session, () => setVisible(doc.getElementById('web-button'), true), 300)
-  scheduleTimeout(session, () => setVisible(doc.getElementById('email-button'), true), 600)
-  scheduleTimeout(session, () => setVisible(doc.getElementById('location-button'), true), 900)
+  scheduleTimeout(session, () => setVisible(doc.getElementById('web-button'), true), INFO_STAGGER_DELAY)
+  scheduleTimeout(session, () => setVisible(doc.getElementById('email-button'), true), INFO_STAGGER_DELAY * 2)
+  scheduleTimeout(session, () => setVisible(doc.getElementById('location-button'), true), INFO_STAGGER_DELAY * 3)
 }
 
 export function initArV5Experience(doc: Document = document, options: InitArV5Options = {}): () => void {
@@ -178,9 +199,9 @@ export function initArV5Experience(doc: Document = document, options: InitArV5Op
         showPortfolio(session, doc, () => {
           scheduleTimeout(session, () => {
             showInfo(session, doc)
-          }, 300)
+          }, INFO_STAGGER_DELAY)
         })
-      }, 300)
+      }, INFO_STAGGER_DELAY)
     })
   })
 
@@ -189,12 +210,12 @@ export function initArV5Experience(doc: Document = document, options: InitArV5Op
   })
 
   bindEvent(session, leftButton, 'click', () => {
-    session.itemIndex = (session.itemIndex - 1 + 3) % 3
+    session.itemIndex = (session.itemIndex - 1 + PORTFOLIO_ITEM_COUNT) % PORTFOLIO_ITEM_COUNT
     showPortfolioItem(doc, session.itemIndex)
   })
 
   bindEvent(session, rightButton, 'click', () => {
-    session.itemIndex = (session.itemIndex + 1) % 3
+    session.itemIndex = (session.itemIndex + 1) % PORTFOLIO_ITEM_COUNT
     showPortfolioItem(doc, session.itemIndex)
   })
 
@@ -209,13 +230,13 @@ export function initArV5Experience(doc: Document = document, options: InitArV5Op
     void video?.play()?.catch?.(() => {})
   })
 
-  bindEvent(session, profileButton, 'click', () => setText('AR, VR solutions and consultation', 'profile'))
-  bindEvent(session, webButton, 'click', () => setText('https://softmind.tech', 'web'))
-  bindEvent(session, emailButton, 'click', () => setText('hello@softmind.tech', 'email'))
-  bindEvent(session, locationButton, 'click', () => setText('Vancouver, Canada | Hong Kong', 'location'))
+  bindEvent(session, profileButton, 'click', () => setText(BRAND_NAME, 'profile'))
+  bindEvent(session, webButton, 'click', () => setText(BRAND_URL, 'web'))
+  bindEvent(session, emailButton, 'click', () => setText(`${BRAND_NAME} 聯絡我們`, 'email'))
+  bindEvent(session, locationButton, 'click', () => setText(BRAND_TAGLINE, 'location'))
 
   bindEvent(session, textEl, 'click', () => {
-    if (session.currentTab === 'web') navigate('https://softmind.tech')
+    if (session.currentTab === 'web') navigate(BRAND_URL)
   })
 
   return () => {
@@ -233,3 +254,5 @@ export function cleanupArV5Artifacts(doc: Document = document) {
     if (el.textContent?.includes('mindar-ui-overlay')) el.remove()
   })
 }
+
+export { AR_SCENE_LOAD_TIMEOUT }
