@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent, useRef } from 'react'
 import { createArV5Island, type ArV5IslandCallbacks } from './createArV5Island'
 
 export type MindARSceneProps = {
@@ -6,13 +6,23 @@ export type MindARSceneProps = {
   onTargetFound?: () => void
   onTargetLost?: () => void
   onError?: (error: unknown) => void
+  navigate?: (url: string) => void
 }
 
-export function MindARScene({ onReady, onTargetFound, onTargetLost, onError }: MindARSceneProps) {
+export function MindARScene({
+  onReady,
+  onTargetFound,
+  onTargetLost,
+  onError,
+  navigate,
+}: MindARSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const callbacksRef = useRef<ArV5IslandCallbacks>({ onReady, onTargetFound, onTargetLost, onError })
-  callbacksRef.current = { onReady, onTargetFound, onTargetLost, onError }
+  const handleReady = useEffectEvent(() => onReady?.())
+  const handleTargetFound = useEffectEvent(() => onTargetFound?.())
+  const handleTargetLost = useEffectEvent(() => onTargetLost?.())
+  const handleError = useEffectEvent((error: unknown) => onError?.(error))
+  const handleNavigate = useEffectEvent((url: string) => navigate?.(url))
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -21,14 +31,18 @@ export function MindARScene({ onReady, onTargetFound, onTargetLost, onError }: M
     let cancelled = false
 
     const bridge: ArV5IslandCallbacks = {
-      onReady: () => { if (!cancelled) callbacksRef.current.onReady?.() },
-      onTargetFound: () => { if (!cancelled) callbacksRef.current.onTargetFound?.() },
-      onTargetLost: () => { if (!cancelled) callbacksRef.current.onTargetLost?.() },
-      onError: (err) => { if (!cancelled) callbacksRef.current.onError?.(err) },
+      onReady: () => { if (!cancelled) handleReady() },
+      onTargetFound: () => { if (!cancelled) handleTargetFound() },
+      onTargetLost: () => { if (!cancelled) handleTargetLost() },
+      onError: (error) => { if (!cancelled) handleError(error) },
+      navigate: (url) => { if (!cancelled) handleNavigate(url) },
     }
 
     void createArV5Island(containerRef.current, bridge).then((cleanup) => {
-      if (cancelled) { cleanup(); return }
+      if (cancelled) {
+        cleanup()
+        return
+      }
       cleanupIsland = cleanup
     })
 

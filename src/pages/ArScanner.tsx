@@ -16,6 +16,7 @@ export function ArScanner() {
         onTargetFound={() => setStatus('tracking')}
         onTargetLost={() => setStatus('lost')}
         onError={(err) => { setStatus('error'); setError(String(err)) }}
+        navigate={navigate}
       />
 
       <div className="absolute inset-0 z-50 pointer-events-none flex flex-col">
