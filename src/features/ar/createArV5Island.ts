@@ -22,9 +22,7 @@ function isMindArReady() {
   return Boolean(getArWindow().AFRAME?.components?.['mindar-image'])
 }
 
-function isAframeExtrasReady() {
-  return Boolean(getArWindow().AFRAME?.components?.['animation-mixer'])
-}
+
 
 function loadScript(src: string, isReady: () => boolean): Promise<void> {
   const existing = document.querySelector(`script[src="${src}"]`)
@@ -49,9 +47,8 @@ function loadScript(src: string, isReady: () => boolean): Promise<void> {
 }
 
 export async function loadArV5Scripts(): Promise<void> {
-  await loadScript('https://aframe.io/releases/1.4.2/aframe.min.js', isAframeReady)
-  await loadScript('https://cdn.jsdelivr.net/npm/aframe-extras@7.1.0/dist/aframe-extras.min.js', isAframeExtrasReady)
-  await loadScript('/vendor/mindar-image-aframe.prod.js', isMindArReady)
+  await loadScript('https://aframe.io/releases/1.5.0/aframe.min.js', isAframeReady)
+  await loadScript('https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js', isMindArReady)
 }
 
 function assertContainerConnected(container: HTMLElement): void {
@@ -91,11 +88,6 @@ function waitForArV5SceneLoad(container: HTMLElement): Promise<HTMLElement> {
   return new Promise<HTMLElement>((resolve) => {
     sceneEl.addEventListener('loaded', () => resolve(sceneEl), { once: true })
   })
-}
-
-function startMindARSystem(sceneEl: HTMLElement): void {
-  const arSystem = (sceneEl as any).systems?.['mindar-image-system']
-  if (arSystem?.start) arSystem.start()
 }
 
 function stopMindARSystem(sceneEl: HTMLElement): void {
@@ -170,8 +162,6 @@ export async function createArV5Island(
       }
     }
     assertContainerConnected(container)
-
-    startMindARSystem(sceneEl)
 
     const target = container.querySelector('#ar-v5-target')
     const onTargetFound = () => callbacks.onTargetFound?.()
