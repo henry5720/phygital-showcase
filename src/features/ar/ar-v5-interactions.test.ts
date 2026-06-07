@@ -134,10 +134,13 @@ describe('initArV5Experience', () => {
 
   it('selects webm on preview click when webm supported', () => {
     const originalCreate = document.createElement.bind(document)
-    vi.spyOn(document, 'createElement').mockImplementation((tag: string, opts?: any) => {
-      const el = originalCreate(tag, opts)
-      if (tag === 'video') {
-        vi.spyOn(el as any, 'canPlayType').mockReturnValue('probably')
+    vi.spyOn(document, 'createElement').mockImplementation(<K extends keyof HTMLElementTagNameMap>(
+      tagName: K,
+      options?: ElementCreationOptions,
+    ): HTMLElementTagNameMap[K] => {
+      const el = originalCreate(tagName, options)
+      if (tagName === 'video') {
+        vi.spyOn(el as HTMLVideoElement, 'canPlayType').mockReturnValue('probably')
       }
       return el
     })
