@@ -90,16 +90,22 @@ function waitForArV5SceneLoad(container: HTMLElement): Promise<HTMLElement> {
   })
 }
 
+type AFrameSceneElement = HTMLElement & {
+  systems?: Record<string, { stop?: () => void }>
+  renderer?: { setAnimationLoop?: (callback: null) => void }
+  pause?: () => void
+}
+
 function stopMindARSystem(sceneEl: HTMLElement): void {
-  const arSystem = (sceneEl as any).systems?.['mindar-image-system']
+  const arSystem = (sceneEl as AFrameSceneElement).systems?.['mindar-image-system']
   if (arSystem?.stop) arSystem.stop()
 }
 
 function destroyArV5Scene(container: HTMLElement, style: HTMLStyleElement): void {
-  const sceneEl = container.querySelector('a-scene') as any
+  const sceneEl = container.querySelector('a-scene') as AFrameSceneElement | null
   if (sceneEl) {
-    try { sceneEl.renderer?.setAnimationLoop?.(null) } catch {}
-    try { sceneEl.pause?.() } catch {}
+    try { sceneEl.renderer?.setAnimationLoop?.(null) } catch { /* renderer cleanup is best-effort */ }
+    try { sceneEl.pause?.() } catch { /* scene pause is best-effort */ }
     try {
       container.querySelectorAll('video').forEach((v) => {
         const video = v as HTMLVideoElement
@@ -110,8 +116,9 @@ function destroyArV5Scene(container: HTMLElement, style: HTMLStyleElement): void
         }
         video.src = ''
       })
-    } catch {}
+    } catch { /* video cleanup is best-effort */ }
   }
+
   document.querySelectorAll('video').forEach((v) => {
     const video = v as HTMLVideoElement
     if (video.srcObject instanceof MediaStream) {
