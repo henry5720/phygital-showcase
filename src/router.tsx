@@ -1,15 +1,49 @@
 import { createBrowserRouter } from 'react-router'
-import { Landing } from './pages/Landing'
-import { ArGuide } from './pages/ArGuide'
-import { ArScanner } from './pages/ArScanner'
-import { Quiz } from './pages/Quiz'
-import { QuizResult } from './pages/QuizResult'
 
 export const router = createBrowserRouter([
-  { path: '/', element: <Landing /> },
-  { path: '/ar/guide', element: <ArGuide /> },
-  { path: '/ar/scanner', element: <ArScanner /> },
-  { path: '/quiz', element: <Quiz /> },
-  { path: '/quiz/result/:type', element: <QuizResult /> },
-  { path: '/product', element: <div style={{ color: '#fff', padding: '2rem' }}>Product page — Plan 3</div> },
+  {
+    path: '/',
+    lazy: async () => {
+      const { Landing } = await import('./pages/Landing')
+      return { Component: Landing }
+    },
+  },
+  {
+    path: '/ar/guide',
+    lazy: async () => {
+      const { ArGuide } = await import('./pages/ArGuide')
+      return { Component: ArGuide }
+    },
+  },
+  {
+    path: '/ar/scanner',
+    lazy: async () => {
+      const { ArScanner } = await import('./pages/ArScanner')
+      return { Component: ArScanner }
+    },
+  },
+  {
+    path: '/quiz',
+    lazy: async () => {
+      const { Quiz } = await import('./pages/Quiz')
+      return { Component: Quiz }
+    },
+  },
+  {
+    path: '/quiz/result/:type',
+    lazy: async () => {
+      const { QuizResult } = await import('./pages/QuizResult')
+      return { Component: QuizResult }
+    },
+  },
+  {
+    path: '/product',
+    lazy: async () => ({
+      Component: () => (
+        <div style={{ color: '#fff', padding: '2rem' }}>
+          Product page — Plan 3
+        </div>
+      ),
+    }),
+  },
 ])
