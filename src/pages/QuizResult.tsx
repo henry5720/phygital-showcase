@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router'
+import { ROUTES } from '@/config/routes'
 import { useConfig } from '../hooks/useConfig'
 import { ResultCard } from '../components/ResultCard'
 
@@ -16,7 +17,7 @@ export function QuizResult() {
       >
         <p>找不到結果，請重新測驗。</p>
         <button
-          onClick={() => navigate('/quiz')}
+          onClick={() => navigate(ROUTES.QUIZ)}
           className="underline opacity-60 cursor-pointer text-foreground"
         >
           重新測驗

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
+import { ROUTES } from '@/config/routes'
 import { useConfig } from '../hooks/useConfig'
 
 export function Landing() {
@@ -57,13 +58,13 @@ export function Landing() {
       <div className="flex flex-col gap-4 w-full max-w-xs">
         <button
           className="cta-btn py-4 px-8 rounded-full font-semibold text-base cursor-pointer border-2 border-primary text-primary bg-transparent"
-          onClick={() => navigate('/ar/guide')}
+          onClick={() => navigate(ROUTES.AR_GUIDE)}
         >
           WebAR 體驗
         </button>
         <button
           className="cta-btn py-4 px-8 rounded-full font-semibold text-base cursor-pointer bg-primary text-background"
-          onClick={() => navigate('/quiz')}
+          onClick={() => navigate(ROUTES.QUIZ)}
         >
           互動測驗
         </button>

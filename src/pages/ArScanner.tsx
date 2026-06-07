@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import { ROUTES } from '@/config/routes'
 import { MindARScene } from '../features/ar/MindARScene'
 
 type ArStatus = 'initializing' | 'scanning' | 'tracking' | 'lost' | 'error'
@@ -22,7 +23,7 @@ export function ArScanner() {
       <div className="absolute inset-0 z-50 pointer-events-none flex flex-col">
         <div className="p-6 flex justify-between items-start pointer-events-auto">
           <button
-            onClick={() => navigate('/ar/guide')}
+            onClick={() => navigate(ROUTES.AR_GUIDE)}
             className="px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-sm font-medium hover:bg-white/20 transition-colors cursor-pointer"
           >
             ← 返回

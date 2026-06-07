@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import { ROUTES } from '@/config/routes'
 import { useConfig } from '../hooks/useConfig'
 import { calculateResult } from '../lib/quiz'
 import { QuizCard } from '../components/QuizCard'
@@ -19,7 +20,7 @@ export function Quiz() {
       setCurrentIndex(currentIndex + 1)
     } else {
       const result = calculateResult(newAnswers)
-      navigate(`/quiz/result/${result}`)
+      navigate(`${ROUTES.QUIZ_RESULT.replace(':type', result)}`)
     }
   }
 
