@@ -13,11 +13,9 @@
   },
   "dependencies": {
     "gsap": "^3.15.0",
-    "mind-ar": "^1.2.5",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-router": "^7.16.0",
-    "three": "^0.150.1"
+    "react-router": "^7.16.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
@@ -31,7 +29,6 @@
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/three": "^0.150.0",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-react": "^6.0.1",
     "babel-plugin-react-compiler": "^1.0.0",

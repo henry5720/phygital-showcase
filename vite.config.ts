@@ -9,9 +9,6 @@ export default defineConfig({
     host: true,
     port: 3009,
   },
-  optimizeDeps: {
-    exclude: ['mind-ar'],
-  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
