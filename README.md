@@ -1,75 +1,65 @@
-# React + TypeScript + Vite
+# 植酌 Fizz't Phygital Showcase
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> 品牌行銷微網站 — 結合 WebAR 體驗與互動測驗
 
-Currently, two official plugins are available:
+## Demo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+![Landing Page](docs/superpowers/specs/2026-06-03-fizzt-design.md)
 
-## React Compiler
+## 功能
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+- **Landing Page** — 品牌展示 + GSAP stagger 動畫
+- **Quiz 測驗** — 5 題問答，3 種人格結果（fresh / ritual / layered）
+- **WebAR 體驗** — MindAR + Three.js 擴增實境，支援 GLB 模型與影片疊加
 
-Note: This will impact Vite dev & build performances.
+## Tech Stack
 
-## Expanding the ESLint configuration
+| 層面 | 技術 |
+|------|------|
+| 框架 | React 19 + TypeScript |
+| 建置 | Vite 8 |
+| 樣式 | Tailwind CSS v4 + shadcn/ui |
+| 動畫 | GSAP |
+| WebAR | MindAR.js + Three.js |
+| 測試 | Vitest + Testing Library |
+| 部署 | Cloudflare Pages |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 開發
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+```bash
+# 安裝依賴
+pnpm install
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+# 啟動開發伺服器
+pnpm dev
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# 建置
+pnpm build
+
+# 測試
+pnpm test
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 專案結構
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── pages/              # 路由頁面（Landing, Quiz, AR）
+├── components/         # UI 元件
+│   └── ui/             # shadcn/ui 元件
+├── features/ar/        # AR 模組（MindAR + Three.js）
+├── config/             # 品牌設定與 quiz 資料
+├── hooks/              # 共用 hooks
+├── lib/                # 工具函式
+└── generated/          # Style Dictionary 產生的 CSS 變數
+```
+
+## 文件
+
+- [AGENTS.md](./AGENTS.md) — 智能體導航入口
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — 架構地圖
+- [DESIGN_TOKENS.md](./DESIGN_TOKENS.md) — Design Token 使用指南
+
+## License
+
+MIT
