@@ -1,73 +1,59 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { useConfig } from '../hooks/useConfig'
-import { MindArCanvas } from '../components/MindArCanvas'
-import { VideoOverlay } from '../components/VideoOverlay'
+import { MindARScene } from '../features/ar/MindARScene'
 
-type ArState = 'idle' | 'tracking' | 'video_playing'
+type ArStatus = 'initializing' | 'scanning' | 'tracking' | 'lost' | 'error'
 
 export function ArScanner() {
-  const config = useConfig()
   const navigate = useNavigate()
-  const [arState, setArState] = useState<ArState>('idle')
-  const [videoSrc, setVideoSrc] = useState<string | null>(null)
-
-  function handleTargetFound() {
-    setArState('tracking')
-  }
-
-  function handleTargetLost() {
-    setArState(prev => prev === 'video_playing' ? prev : 'idle')
-  }
-
-  function handleHotspot(type: 'A' | 'B' | 'C') {
-    const src = {
-      A: config.brand.ar.videos.stageA,
-      B: config.brand.ar.videos.stageB,
-      C: config.brand.ar.videos.stageC,
-    }[type]
-    setVideoSrc(src)
-    setArState('video_playing')
-  }
-
-  function handleVideoEnd() {
-    setVideoSrc(null)
-    setArState('tracking')
-  }
+  const [status, setStatus] = useState<ArStatus>('initializing')
+  const [error, setError] = useState<string | null>(null)
 
   return (
-    <div className="relative w-full h-dvh overflow-hidden">
-      <MindArCanvas
-        modelSrc={config.brand.ar.model}
-        mindFileSrc={config.brand.logoMindFile}
-        onTargetFound={handleTargetFound}
-        onTargetLost={handleTargetLost}
-        onHotspot={handleHotspot}
+    <div className="relative w-full h-dvh overflow-hidden bg-black text-white">
+      <MindARScene
+        onReady={() => setStatus('scanning')}
+        onTargetFound={() => setStatus('tracking')}
+        onTargetLost={() => setStatus('lost')}
+        onError={(err) => { setStatus('error'); setError(String(err)) }}
       />
 
-      {arState === 'idle' && (
-        <div className="absolute inset-x-0 bottom-16 flex flex-col items-center gap-4 pointer-events-none">
-          <p className="text-sm opacity-50" style={{ color: '#fff' }}>
-            對準 Fizz't Logo 開始體驗
-          </p>
+      <div className="absolute inset-0 z-50 pointer-events-none flex flex-col">
+        <div className="p-6 flex justify-between items-start pointer-events-auto">
+          <button
+            onClick={() => navigate('/ar/guide')}
+            className="px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-sm font-medium hover:bg-white/20 transition-colors cursor-pointer"
+          >
+            ← 返回
+          </button>
+          <div className="text-right">
+            <h1 className="text-xl font-bold tracking-tight">Product AR</h1>
+            <p className="text-xs opacity-50">DOM Island</p>
+          </div>
         </div>
-      )}
 
-      <button
-        onClick={() => navigate('/ar')}
-        className="absolute top-4 left-4 z-50 text-sm opacity-50 hover:opacity-100 cursor-pointer"
-        style={{ color: '#fff' }}
-      >
-        ← 返回
-      </button>
+        <div className="flex-1" />
 
-      {arState === 'video_playing' && videoSrc && (
-        <VideoOverlay
-          src={videoSrc}
-          onEnd={handleVideoEnd}
-          onClose={handleVideoEnd}
-        />
-      )}
+        <div className="p-6 pointer-events-auto">
+          <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-2 h-2 rounded-full animate-pulse ${
+                status === 'tracking' ? 'bg-green-400'
+                  : status === 'error' ? 'bg-red-400'
+                  : 'bg-yellow-400'
+              }`} />
+              <span className="text-[10px] uppercase tracking-widest font-bold opacity-50">{status}</span>
+            </div>
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+            {!error && status === 'scanning' && (
+              <p className="text-sm opacity-50">請對準識別圖以開始。</p>
+            )}
+            {!error && status === 'lost' && (
+              <p className="text-sm opacity-50">識別圖遺失，請重新對準。</p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

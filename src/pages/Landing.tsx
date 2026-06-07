@@ -51,7 +51,7 @@ export function Landing() {
         <button
           className="cta-btn py-4 px-8 rounded-full font-semibold text-base cursor-pointer border-2"
           style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)', backgroundColor: 'transparent' }}
-          onClick={() => navigate('/ar')}
+          onClick={() => navigate('/ar/guide')}
         >
           WebAR 體驗
         </button>

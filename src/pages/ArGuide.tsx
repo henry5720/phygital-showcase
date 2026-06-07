@@ -40,13 +40,6 @@ export function ArGuide() {
           開始體驗 AR
         </button>
         <button
-          onClick={() => navigate('/product-ar')}
-          className="w-full py-2 px-8 rounded-full font-medium text-sm cursor-pointer opacity-80"
-          style={{ border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }}
-        >
-          Web AR 產品展示
-        </button>
-        <button
           onClick={() => navigate('/')}
           className="underline opacity-40 text-sm cursor-pointer"
           style={{ color: 'var(--color-text)' }}
