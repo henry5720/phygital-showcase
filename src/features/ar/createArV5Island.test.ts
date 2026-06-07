@@ -121,4 +121,18 @@ describe('createArV5Island', () => {
     expect(onTargetLost).toHaveBeenCalledTimes(1)
     cleanup()
   })
+
+  it('does not forward callbacks after cleanup', async () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+
+    const onTargetFound = vi.fn()
+    const cleanup = await createArV5Island(container, { onTargetFound })
+
+    cleanup()
+
+    const target = container.querySelector('#ar-v5-target')
+    target?.dispatchEvent(new Event('targetFound'))
+    expect(onTargetFound).not.toHaveBeenCalled()
+  })
 })
