@@ -12,5 +12,15 @@ export function calculateResult(answers: QuizOption[]): string {
     }
   }
 
-  return Object.entries(totals).sort(([, a], [, b]) => b - a)[0][0]
+  let bestType = ''
+  let bestScore = Number.NEGATIVE_INFINITY
+
+  for (const [type, score] of Object.entries(totals)) {
+    if (score > bestScore) {
+      bestType = type
+      bestScore = score
+    }
+  }
+
+  return bestType
 }
