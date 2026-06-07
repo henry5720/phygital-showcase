@@ -1,10 +1,18 @@
 import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
+import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 
 export default defineConfig({
-  plugins: [basicSsl(), react(), tailwindcss()],
+  plugins: [
+    basicSsl(),
+    react(),
+    babel({
+      presets: [reactCompilerPreset()],
+    }),
+    tailwindcss(),
+  ],
   server: {
     host: true,
     port: 3009,
