@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
-import gsap from 'gsap'
 import { useConfig } from '../hooks/useConfig'
 
 export function Landing() {
@@ -9,24 +8,34 @@ export function Landing() {
   const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.from('.landing-hero', {
-        opacity: 0,
-        y: 20,
-        duration: 0.6,
-        ease: 'power2.out',
-      })
-      gsap.from('.cta-btn', {
-        opacity: 0,
-        y: 12,
-        duration: 0.4,
-        stagger: 0.12,
-        delay: 0.3,
-        ease: 'power2.out',
-      })
-    }, rootRef)
+    let cancelled = false
+    let revert: (() => void) | null = null
 
-    return () => ctx.revert()
+    void import('gsap').then(({ default: gsap }) => {
+      if (cancelled) return
+      const ctx = gsap.context(() => {
+        gsap.from('.landing-hero', {
+          opacity: 0,
+          y: 20,
+          duration: 0.6,
+          ease: 'power2.out',
+        })
+        gsap.from('.cta-btn', {
+          opacity: 0,
+          y: 12,
+          duration: 0.4,
+          stagger: 0.12,
+          delay: 0.3,
+          ease: 'power2.out',
+        })
+      }, rootRef)
+      revert = () => ctx.revert()
+    })
+
+    return () => {
+      cancelled = true
+      revert?.()
+    }
   }, [])
 
   return (

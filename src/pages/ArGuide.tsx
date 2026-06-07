@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router'
-import gsap from 'gsap'
 import { useConfig } from '../hooks/useConfig'
 
 export function ArGuide() {
@@ -9,7 +8,16 @@ export function ArGuide() {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    gsap.fromTo(ref.current, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' })
+    let cancelled = false
+
+    void import('gsap').then(({ default: gsap }) => {
+      if (cancelled || !ref.current) return
+      gsap.fromTo(ref.current, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' })
+    })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   return (

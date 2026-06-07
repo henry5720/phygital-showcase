@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import gsap from 'gsap'
 import type { QuizResult } from '../config/types'
 
 interface Props {
@@ -11,11 +10,20 @@ export function ResultCard({ result, onJoinLine }: Props) {
   const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    gsap.fromTo(
-      cardRef.current,
-      { opacity: 0, scale: 0.96 },
-      { opacity: 1, scale: 1, duration: 0.45, ease: 'power2.out' },
-    )
+    let cancelled = false
+
+    void import('gsap').then(({ default: gsap }) => {
+      if (cancelled || !cardRef.current) return
+      gsap.fromTo(
+        cardRef.current,
+        { opacity: 0, scale: 0.96 },
+        { opacity: 1, scale: 1, duration: 0.45, ease: 'power2.out' },
+      )
+    })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   return (

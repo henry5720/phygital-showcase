@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import gsap from 'gsap'
 import type { QuizQuestion, QuizOption } from '../config/types'
 
 interface Props {
@@ -13,11 +12,20 @@ export function QuizCard({ question, questionNumber, total, onSelect }: Props) {
   const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    gsap.fromTo(
-      cardRef.current,
-      { opacity: 0, x: 30 },
-      { opacity: 1, x: 0, duration: 0.28, ease: 'power2.out' },
-    )
+    let cancelled = false
+
+    void import('gsap').then(({ default: gsap }) => {
+      if (cancelled || !cardRef.current) return
+      gsap.fromTo(
+        cardRef.current,
+        { opacity: 0, x: 30 },
+        { opacity: 1, x: 0, duration: 0.28, ease: 'power2.out' },
+      )
+    })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   return (
