@@ -1,301 +1,248 @@
 # Vercel React Best Practices 實作設計
 
-**日期**: 2026-06-06
+**日期**: 2026-06-06 (v2)
 **狀態**: Approved
-**範圍**: Bundle size optimization + re-render optimization + rendering fixes
+**範圍**: Bundle size optimization + lint fixes + build config
 
 ---
 
 ## 背景
 
-稽核發現專案偏離 Vercel React Best Practices 多項規則。最大問題是 route-level code splitting 缺失，導致所有 AR/Three.js/GSAP 代碼被打包到主 bundle。
+深度稽核發現專案偏離 Vercel React Best Practices 多項規則。最大問題是 route-level code splitting 缺失（單一 379KB JS chunk），以及 React Compiler 已安裝但未啟用。
 
-## 決策紀錄
+## 稽核發現
 
-### 被移除的改動
+### 確認的問題
+
+| # | 問題 | 規則 | 嚴重度 |
+|---|---|---|---|
+| 1 | Router 無 code splitting — 單一 379KB JS chunk | `bundle-dynamic-imports` | Critical |
+| 2 | MindARScene lint error — render body 中更新 ref | react-hooks/refs | High |
+| 3 | React Compiler 未啟用 — babel-plugin-react-compiler 在 devDets 但 vite.config.ts 沒使用 | advanced | High |
+| 4 | createArV5Island lint errors — `any` x2 + 空 catch x3 | eslint | Medium |
+| 5 | Vite 無 manual chunk splitting — vendor code 未分離 | `bundle-dynamic-imports` | Medium |
+| 6 | Test lint errors — `no-explicit-any` x3 | eslint | Low |
+
+### 確認無問題的項目
+
+| 項目 | 狀態 | 原因 |
+|---|---|---|
+| Barrel imports | ✅ | 所有 import 都是直接引用 |
+| useCallback 需求 | ✅ | MindARScene 已用 callbacksRef 正確處理 |
+| Passive event listeners | ✅ | 全部是自訂事件或 click，passive 無效 |
+| `&&` conditional rendering | ✅ | 無違規 |
+| Components inside components | ✅ | 無違規 |
+| Inline style 物件 | ✅ | React Compiler 啟用後自動 memoize |
+| useConfig 重複副作用 | ✅ | React Compiler 啟用後自動最佳化 |
+| GSAP 動態載入 | ✅ | Route splitting 後 gsap 在各 route chunk 中 |
+| Eruda dev-only | — | 使用者之後自行處理 |
+
+### 被移除的改動 (v1 → v2)
 
 | 項目 | 原因 |
 |------|------|
-| Three.js named imports | `import * as THREE` 不影響 Vite/Rollup tree-shaking，官方推薦此寫法 |
+| Three.js named imports | `import * as THREE` 不影響 Vite/Rollup tree-shaking |
 | GSAP 動態載入 | Route splitting 已自然將 GSAP 分到各 route chunk |
-| React.memo | 專案已啟用 React Compiler (`babel-plugin-react-compiler`)，自動處理 memoization |
-| Hoist ArV3Scene styles | ArV3 將捨棄，不值得改 |
+| React.memo | 啟用 React Compiler 後自動處理 memoization |
+| Hoist ArV3Scene styles | ArV3 已不存在 |
+| useCallback (4 pages) | MindARScene 用 callbacksRef 已正確處理；Quiz 用 key remount |
+| Passive event listeners | 全部是自訂事件，passive 選項無效 |
+| useConfig eslint-disable | React Compiler 啟用後自動處理 |
+| .toSorted() | 小陣列 (2-4 elements)，無實際影響 |
+| Eruda dev-only | 使用者之後自行處理 |
 
 ---
 
 ## Stage 1: Route-Level Code Splitting
 
 **規則**: `bundle-dynamic-imports`
-**影響**: Critical — 訪問 `/quiz` 時不下載 AR/Three.js/GSAP 代碼
+**影響**: Critical — 訪問 `/quiz` 時不下載 AR/A-Frame/GSAP 代碼
 
 ### 改動
 
 **檔案**: `src/router.tsx`
 
-將所有頁面 import 改為 React Router v7 的 `lazy` property：
+將所有頁面 import 改為 React Router v7 的 `lazy` property。目前有 5 個路由 + 1 個 placeholder：
+
+- `/` → Landing
+- `/ar/guide` → ArGuide
+- `/ar/scanner` → ArScanner (含 A-Frame + MindAR)
+- `/quiz` → Quiz
+- `/quiz/result/:type` → QuizResult
+- `/product` → inline placeholder
 
 ```tsx
-import { createBrowserRouter } from 'react-router'
-import { Layout } from './components/Layout'
+// Before: 所有頁面 static import → 單一 379KB JS
+import { Landing } from './pages/Landing'
+import { ArGuide } from './pages/ArGuide'
+// ...
 
-const router = createBrowserRouter([
-  {
-    element: Layout,
-    children: [
-      {
-        index: true,
-        lazy: async () => {
-          const { Landing } = await import('./pages/Landing')
-          return { Component: Landing }
-        },
-      },
-      {
-        path: 'ar',
-        lazy: async () => {
-          const { ArGuide } = await import('./pages/ArGuide')
-          return { Component: ArGuide }
-        },
-      },
-      {
-        path: 'ar/scanner',
-        lazy: async () => {
-          const { ArScanner } = await import('./pages/ArScanner')
-          return { Component: ArScanner }
-        },
-      },
-      {
-        path: 'ar/v2',
-        lazy: async () => {
-          const { ArV2Page } = await import('./pages/ArV2Page')
-          return { Component: ArV2Page }
-        },
-      },
-      {
-        path: 'ar/v3',
-        lazy: async () => {
-          const { ArV3Page } = await import('./pages/ArV3Page')
-          return { Component: ArV3Page }
-        },
-      },
-      {
-        path: 'ar/v4',
-        lazy: async () => {
-          const { ArV4Page } = await import('./pages/ArV4Page')
-          return { Component: ArV4Page }
-        },
-      },
-      {
-        path: 'quiz',
-        lazy: async () => {
-          const { Quiz } = await import('./pages/Quiz')
-          return { Component: Quiz }
-        },
-      },
-      {
-        path: 'quiz/result/:type',
-        lazy: async () => {
-          const { QuizResult } = await import('./pages/QuizResult')
-          return { Component: QuizResult }
-        },
-      },
-    ],
+// After: lazy import → Vite 自動 code split
+{
+  path: '/',
+  lazy: async () => {
+    const { Landing } = await import('./pages/Landing')
+    return { Component: Landing }
   },
-])
+}
 ```
 
 ### 預期效果
 
 ```
 Before:
-  main.js (~800KB+) — React + Router + Three.js + MindAR + GSAP + 所有頁面
+  index-BDM4UJt7.js (379KB / 125KB gzip) — 全部打包
 
 After:
-  main.js (~150KB) — React + Router + Layout
+  main.js — React + React Router (shared)
   chunks/landing.js — Landing + GSAP
-  chunks/ar-v4.js — ArV4Page + Three.js + MindAR + GSAP
-  chunks/ar-v3.js — ArV3Page + A-Frame + MindAR
+  chunks/ar-scanner.js — ArScanner + A-Frame + MindAR + GSAP
   chunks/quiz.js — Quiz + QuizResult
 ```
 
 ### 驗證
 
-- 打開 DevTools Network tab，訪問 `/quiz`，確認不會下載 `three` 相關模組
-- `npm run build` 後檢查 `dist/assets/` 確認 chunks 分離
+- `npm run build` 後 `ls dist/assets/*.js` 確認多個檔案
+- DevTools Network tab 訪問 `/quiz` 確認不下載 AR 相關模組
 
 ---
 
-## Stage 2: Eruda 只在 Dev Mode 載入
+## Stage 2: Fix MindARScene Lint Error
 
-**規則**: `bundle-defer-third-party`
-**影響**: High — Production 不載入 debug console
-
-### 改動
-
-**檔案**: `index.html`
-
-移除無條件載入的 Eruda scripts，改為條件化：
-
-```html
-<script>
-  if (import.meta.env.DEV) {
-    var s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/eruda';
-    s.onload = function() { eruda.init(); };
-    document.head.appendChild(s);
-  }
-</script>
-```
-
-### 驗證
-
-- `npm run build && npm run preview` — 確認 production 不載入 Eruda
-- `npm run dev` — 確認 dev mode 仍有 Eruda
-
----
-
-## Stage 3: Functional setState + useCallback
-
-**規則**: `rerender-functional-setstate`
-**影響**: Medium — 防止 stale closure，穩定 callback 引用
+**規則**: react-hooks/refs
+**影響**: High — React Compiler 報錯，render body 中更新 ref
 
 ### 改動
 
-**檔案**: `src/pages/ArV4Page.tsx`, `src/pages/ArScanner.tsx`, `src/pages/Quiz.tsx`, `src/pages/QuizResult.tsx`
-
-將 inline arrow functions 改為 `useCallback`，並使用 functional setState：
+**檔案**: `src/features/ar/MindARScene.tsx:15`
 
 ```tsx
-// Before
-const ArV4Page = () => {
-  const [status, setStatus] = useState('idle')
-  return (
-    <ArV4Experience
-      onReady={() => setStatus('scanning')}
-      onTargetFound={() => setStatus('tracking')}
-      onTargetLost={() => setStatus('lost')}
-      onAction={(id) => setSelectedActionId(id)}
-      onError={(err) => { setStatus('error'); setError(String(err)) }}
-    />
-  )
-}
+// Before (lint error: Cannot update ref during render)
+callbacksRef.current = { onReady, onTargetFound, onTargetLost, onError }
 
-// After
-const ArV4Page = () => {
-  const [status, setStatus] = useState('idle')
-  const [selectedActionId, setSelectedActionId] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleReady = useCallback(() => setStatus('scanning'), [])
-  const handleTargetFound = useCallback(() => setStatus('tracking'), [])
-  const handleTargetLost = useCallback(() => setStatus('lost'), [])
-  const handleAction = useCallback((id: string) => setSelectedActionId(id), [])
-  const handleError = useCallback((err: unknown) => {
-    setStatus('error')
-    setError(String(err))
-  }, [])
-
-  return (
-    <ArV4Experience
-      onReady={handleReady}
-      onTargetFound={handleTargetFound}
-      onTargetLost={handleTargetLost}
-      onAction={handleAction}
-      onError={handleError}
-    />
-  )
-}
-```
-
-### 驗證
-
-- `npm run lint` 通過
-- React DevTools Profiler 確認 callback 引用穩定
-
----
-
-## Stage 4: Passive Event Listeners
-
-**規則**: `client-passive-event-listeners`
-**影響**: Medium — 優化 scroll/touch 效能
-
-### 改動
-
-**檔案**: `src/components/MindArCanvas.tsx`, `src/lib/ar-v4/createMindArV4Experience.ts`
-
-```tsx
-// Before
-container.addEventListener('pointerdown', onPointerDown)
-
-// After
-container.addEventListener('pointerdown', onPointerDown, { passive: true })
-```
-
-### 驗證
-
-- 確認 pointerdown handler 沒有呼叫 `preventDefault()`
-- 功能測試：AR 互動仍然正常
-
----
-
-## Stage 5: useEffect 依賴修正
-
-**規則**: `rerender-dependencies`
-**影響**: Low — lint 合規
-
-### 改動
-
-**檔案**: `src/hooks/useConfig.ts`
-
-```tsx
+// After: 用 useEffect 同步
 useEffect(() => {
-  const root = document.documentElement
-  root.style.setProperty('--color-primary', config.tokens.primaryColor)
-  root.style.setProperty('--color-bg', config.tokens.backgroundColor)
-  root.style.setProperty('--color-text', config.tokens.textColor)
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- config is module-level constant, never changes
-}, [])
+  callbacksRef.current = { onReady, onTargetFound, onTargetLost, onError }
+})
 ```
 
 ### 驗證
 
-- `npm run lint` 通過
+- `npm run lint` 確認 MindARScene 無 error
+- `npm run build` 確認 TypeScript 通過
 
 ---
 
-## Stage 6: .sort() → .toSorted()
+## Stage 3: Enable React Compiler
 
-**規則**: `js-tosorted-immutable`
-**影響**: Low — immutable pattern
+**規則**: advanced
+**影響**: High — 自動處理所有 inline style 和 callback 的 memoization
+
+### 背景
+
+`babel-plugin-react-compiler@^1.0.0` 已在 devDependencies 中，但 `vite.config.ts` 的 `react()` plugin 沒有傳入 compiler 設定。目前使用的是預設 Babel transform，所有自動 memoization 都沒跑。
 
 ### 改動
 
-**檔案**: `src/lib/quiz.ts`
+**檔案**: `vite.config.ts`
 
 ```tsx
 // Before
-return Object.entries(totals).sort(([, a], [, b]) => b - a)[0][0]
+plugins: [basicSsl(), react(), tailwindcss()],
 
-// After
-return Object.entries(totals).toSorted(([, a], [, b]) => b - a)[0][0]
+// After: 啟用 React Compiler
+plugins: [basicSsl(), react({ babel: { plugins: [['babel-plugin-react-compiler']] } }), tailwindcss()],
 ```
 
 ### 驗證
 
-- `npm run test:run` 通過
-- `npm run lint` 通過
+- `npm run build` 確認 build 成功
+- `npm run lint` 確認無新增 error
+- DevTools Profiler 確認 component re-render 次數減少
+
+---
+
+## Stage 4: Vite Manual Chunks
+
+**規則**: `bundle-dynamic-imports`
+**影響**: Medium — 分離 vendor code，改善長期快取
+
+### 改動
+
+**檔案**: `vite.config.ts`
+
+```tsx
+// 加入 build.rollupOptions
+build: {
+  rollupOptions: {
+    output: {
+      manualChunks: {
+        'vendor-react': ['react', 'react-dom', 'react-router'],
+        'vendor-gsap': ['gsap'],
+      },
+    },
+  },
+},
+```
+
+### 驗證
+
+- `npm run build` 後確認 `dist/assets/` 有 vendor-react 和 vendor-gsap chunks
+- App 功能正常
+
+---
+
+## Stage 5: Fix createArV5Island Lint Errors
+
+**規則**: eslint
+**影響**: Medium — 5 個 lint error
+
+### 改動
+
+**檔案**: `src/features/ar/createArV5Island.ts`
+
+- 第 94 行: `(sceneEl as any).systems` → `(sceneEl as Record<string, unknown>).systems` 或用 optional chaining
+- 第 99 行: `as any` → 具體型別
+- 第 101-102, 113 行: 空 catch block → 加 `// ignored` comment
+
+### 驗證
+
+- `npm run lint` 確認 createArV5Island.ts 無 error
+- `npm run build` 通過
+
+---
+
+## Stage 6: Fix Test Lint Errors
+
+**規則**: eslint
+**影響**: Low — 3 個 `no-explicit-any`
+
+### 改動
+
+**檔案**:
+- `src/features/ar/ar-v5-interactions.test.ts` (第 137, 140 行)
+- `src/features/ar/createArV5Island.test.ts` (第 35 行)
+
+將 `any` 改為 `unknown` 或具體型別。
+
+### 驗證
+
+- `npm run lint` 確認無 error
+- `npm run test:run` 確認測試通過
 
 ---
 
 ## 執行順序
 
 1. Stage 1 (Route splitting) — 影響最大，先做
-2. Stage 2 (Eruda) — 獨立，簡單
-3. Stage 3 (useCallback) — 需要改 4 個頁面
-4. Stage 4 (Passive listeners) — 獨立，簡單
-5. Stage 5 (useEffect deps) — 獨立，簡單
-6. Stage 6 (.toSorted) — 獨立，簡單
+2. Stage 2 (MindARScene lint) — 獨立，簡單
+3. Stage 3 (React Compiler) — 需要 vite.config.ts 改動
+4. Stage 4 (Manual chunks) — 與 Stage 3 同檔案，接續做
+5. Stage 5 (createArV5Island lint) — 獨立
+6. Stage 6 (Test lint) — 獨立
 
 ## 風險
 
-- Stage 1 改動最大，需要確認 React Router v7 的 `lazy` property 行為
+- Stage 1 改動最大，需確認 React Router v7 `lazy` 行為
+- Stage 3 啟用 React Compiler 可能影響現有代碼（experimental feature）
 - 所有改動都可以獨立測試，不會互相影響
