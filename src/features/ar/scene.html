@@ -1,31 +1,31 @@
 <div id="ar-v5-scanning-overlay" class="hidden">
   <div class="inner">
-    <img src="/assets/ar-v3/targets/card.png" />
+    <img src="/assets/web-ar/card.png" />
     <div class="scanline"></div>
   </div>
 </div>
 
 <a-scene
-  mindar-image="imageTargetSrc: /assets/ar-v3/targets/card.mind; showStats: false; uiScanning: #ar-v5-scanning-overlay; filterMinCF:0.0001; filterBeta: 0.001;"
+  mindar-image="imageTargetSrc: /assets/web-ar/card.mind; showStats: false; uiScanning: #ar-v5-scanning-overlay; filterMinCF:0.0001; filterBeta: 0.001;"
   color-space="sRGB"
   renderer="colorManagement: true, physicallyCorrectLights"
   vr-mode-ui="enabled: false"
   device-orientation-permission-ui="enabled: false"
 >
   <a-assets>
-    <img id="card" src="/assets/ar-v3/targets/card.png" />
-    <img id="icon-web" src="/assets/ar-v3/icons/web.png" />
-    <img id="icon-email" src="/assets/ar-v3/icons/email.png" />
-    <img id="icon-profile" src="/assets/ar-v3/icons/profile.png" />
-    <img id="icon-location" src="/assets/ar-v3/icons/location.png" />
-    <img id="icon-left" src="/assets/ar-v3/icons/left.png" />
-    <img id="icon-right" src="/assets/ar-v3/icons/right.png" />
-    <img id="paintandquest-preview" src="/assets/ar-v3/portfolio/paintandquest-preview.png" />
-    <video id="paintandquest-video-mp4" loop="true" playsinline webkit-playsinline src="/assets/ar-v3/portfolio/paintandquest.mp4"></video>
-    <video id="paintandquest-video-webm" loop="true" playsinline webkit-playsinline src="/assets/ar-v3/portfolio/paintandquest.webm"></video>
-    <img id="coffeemachine-preview" src="/assets/ar-v3/portfolio/coffeemachine-preview.png" />
-    <img id="peak-preview" src="/assets/ar-v3/portfolio/peak-preview.png" />
-    <a-asset-item id="avatarModel" src="/assets/ar-v3/models/softmind/scene.gltf"></a-asset-item>
+    <img id="card" src="/assets/web-ar/card.png" />
+    <img id="icon-web" src="/assets/web-ar/icons/web.png" />
+    <img id="icon-email" src="/assets/web-ar/icons/email.png" />
+    <img id="icon-profile" src="/assets/web-ar/icons/profile.png" />
+    <img id="icon-location" src="/assets/web-ar/icons/location.png" />
+    <img id="icon-left" src="/assets/web-ar/icons/left.png" />
+    <img id="icon-right" src="/assets/web-ar/icons/right.png" />
+    <img id="paintandquest-preview" src="/assets/web-ar/portfolio/paintandquest-preview.png" />
+    <video id="paintandquest-video-mp4" loop="true" playsinline webkit-playsinline src="/assets/web-ar/portfolio/paintandquest.mp4"></video>
+    <video id="paintandquest-video-webm" loop="true" playsinline webkit-playsinline src="/assets/web-ar/portfolio/paintandquest.webm"></video>
+    <img id="coffeemachine-preview" src="/assets/web-ar/portfolio/coffeemachine-preview.png" />
+    <img id="peak-preview" src="/assets/web-ar/portfolio/peak-preview.png" />
+    <a-asset-item id="avatarModel" src="/assets/web-ar/softmind/scene.gltf"></a-asset-item>
   </a-assets>
 
   <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: 10000; objects: .clickable"></a-camera>

@@ -40,11 +40,11 @@ export function ArGuide() {
           開始體驗 AR
         </button>
         <button
-          onClick={() => navigate('/ar/v4')}
+          onClick={() => navigate('/product-ar')}
           className="w-full py-2 px-8 rounded-full font-medium text-sm cursor-pointer opacity-80"
           style={{ border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }}
         >
-          AR V4：React + MindAR Three.js
+          Web AR 產品展示
         </button>
         <button
           onClick={() => navigate('/')}

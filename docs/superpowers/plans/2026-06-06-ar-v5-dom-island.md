@@ -7,7 +7,7 @@
 
 **架構：** React 只渲染一個 `<div ref>`。Mount 時，工廠函式依序載入 A-Frame → MindAR scripts，用 DOMParser 解析外部 `scene.html`，appendChild 注入 container，然後初始化互動邏輯。Unmount 時，cleanup 取消 pending init、銷毀 scene、停止 camera/media tracks、移除所有注入的 DOM。React 永遠不碰 A-Frame custom elements。
 
-**技術棧：** React 19, React Router, TypeScript, Vite（用 `?raw` imports）, Vitest, A-Frame 1.4.2 (CDN), A-Frame Extras 7.1.0 (CDN, `animation-mixer`), MindAR A-Frame (local vendor), 复用 `/public/assets/ar-v3/` 素材。
+**技術棧：** React 19, React Router, TypeScript, Vite（用 `?raw` imports）, Vitest, A-Frame 1.4.2 (CDN), A-Frame Extras 7.1.0 (CDN, `animation-mixer`), MindAR A-Frame (local vendor), Web AR runtime assets under `/public/assets/web-ar/`.
 
 ---
 
@@ -27,7 +27,7 @@ src/
 ├─ router.tsx                          ← 新增 /product-ar 路由
 ```
 
-**素材：** 直接复用 `/public/assets/ar-v3/`（targets, icons, portfolio images, videos, 3D model）。
+**素材：** Web AR runtime assets live under `/public/assets/web-ar/`.
 
 ---
 

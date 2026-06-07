@@ -2,9 +2,6 @@ import { createBrowserRouter } from 'react-router'
 import { Landing } from './pages/Landing'
 import { ArGuide } from './pages/ArGuide'
 import { ArScanner } from './pages/ArScanner'
-import { ArV2Page } from './pages/ArV2Page'
-import { ArV3Page } from './pages/ArV3Page'
-import { ArV4Page } from './pages/ArV4Page'
 import { ProductARPage } from './pages/ProductARPage'
 import { Quiz } from './pages/Quiz'
 import { QuizResult } from './pages/QuizResult'
@@ -13,9 +10,6 @@ export const router = createBrowserRouter([
   { path: '/', element: <Landing /> },
   { path: '/ar', element: <ArGuide /> },
   { path: '/ar/scanner', element: <ArScanner /> },
-  { path: '/ar/v2', element: <ArV2Page /> },
-  { path: '/ar/v3', element: <ArV3Page /> },
-  { path: '/ar/v4', element: <ArV4Page /> },
   { path: '/product-ar', element: <ProductARPage /> },
   { path: '/quiz', element: <Quiz /> },
   { path: '/quiz/result/:type', element: <QuizResult /> },

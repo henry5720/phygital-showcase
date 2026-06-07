@@ -95,13 +95,11 @@ function waitForArV5SceneLoad(container: HTMLElement): Promise<HTMLElement> {
 
 function startMindARSystem(sceneEl: HTMLElement): void {
   const arSystem = (sceneEl as any).systems?.['mindar-image-system']
-  console.log('[AR-V5] startMindARSystem arSystem:', !!arSystem, 'start:', !!arSystem?.start)
   if (arSystem?.start) arSystem.start()
 }
 
 function stopMindARSystem(sceneEl: HTMLElement): void {
   const arSystem = (sceneEl as any).systems?.['mindar-image-system']
-  console.log('[AR-V5] stopMindARSystem arSystem:', !!arSystem, 'stop:', !!arSystem?.stop)
   if (arSystem?.stop) arSystem.stop()
 }
 
@@ -152,16 +150,13 @@ export async function createArV5Island(
 
   try {
     assertContainerConnected(container)
-    console.log('[AR-V5] loading scripts...')
     await loadArV5Scripts()
-    console.log('[AR-V5] scripts loaded')
     assertContainerConnected(container)
 
     registerArV5Components()
     styleEl = injectArV5Scene(container)
     assertContainerConnected(container)
 
-    console.log('[AR-V5] waiting for scene loaded...')
     const loadPromise = waitForArV5SceneLoad(container)
     const timeoutPromise = new Promise<HTMLElement>((_, reject) =>
       setTimeout(() => reject(new Error('scene loaded timeout')), 10000)
@@ -170,54 +165,13 @@ export async function createArV5Island(
       sceneEl = await Promise.race([loadPromise, timeoutPromise])
     } catch {
       sceneEl = container.querySelector('a-scene') as HTMLElement | null
-      if (sceneEl) {
-        console.log('[AR-V5] scene loaded timeout, using fallback')
-      } else {
+      if (!sceneEl) {
         throw new Error('a-scene not found')
       }
     }
-    console.log('[AR-V5] scene ready')
     assertContainerConnected(container)
 
     startMindARSystem(sceneEl)
-
-    const enforceCameraVideoVisibility = () => {
-      const allVideos = document.querySelectorAll('video')
-      allVideos.forEach((v) => {
-        const video = v as HTMLVideoElement
-        if (video.srcObject instanceof MediaStream && video.srcObject.getTracks().length > 0) {
-          console.log('[AR-V5] found camera video, enforcing visibility')
-          video.style.position = 'absolute'
-          video.style.top = '0'
-          video.style.left = '0'
-          video.style.width = '100%'
-          video.style.height = '100%'
-          video.style.objectFit = 'cover'
-          video.style.zIndex = '0'
-        }
-      })
-    }
-    setTimeout(enforceCameraVideoVisibility, 1000)
-    setTimeout(enforceCameraVideoVisibility, 3000)
-    setTimeout(enforceCameraVideoVisibility, 6000)
-
-    const auditDom = () => {
-      const allVideos = document.querySelectorAll('video')
-      const allCanvases = document.querySelectorAll('canvas')
-      console.log('[AR-V5] DOM audit:')
-      console.log('  videos:', allVideos.length)
-      allVideos.forEach((v, i) => {
-        const vs = getComputedStyle(v)
-        console.log(`  video[${i}] id=${v.id} display=${vs.display} pos=${vs.position} w=${vs.width} h=${vs.height} objFit=${vs.objectFit} zIndex=${vs.zIndex} srcObject=${!!(v as HTMLVideoElement).srcObject}`)
-      })
-      console.log('  canvases:', allCanvases.length)
-      allCanvases.forEach((c, i) => {
-        const cs = getComputedStyle(c)
-        console.log(`  canvas[${i}] class=${c.className} display=${cs.display} pos=${cs.position} w=${cs.width} h=${cs.height} zIndex=${cs.zIndex}`)
-      })
-    }
-    setTimeout(auditDom, 2000)
-    setTimeout(auditDom, 5000)
 
     const target = container.querySelector('#ar-v5-target')
     const onTargetFound = () => callbacks.onTargetFound?.()

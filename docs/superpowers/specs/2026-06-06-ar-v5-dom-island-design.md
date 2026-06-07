@@ -63,7 +63,7 @@ src/
 ├─ router.tsx                          ← 新增 /product-ar 路由
 ```
 
-**素材**：直接复用 `/public/assets/ar-v3/`（targets, icons, portfolio, videos, 3D model）
+**素材**：Web AR runtime assets live under `/public/assets/web-ar/`.
 
 ## 資料流
 
@@ -88,7 +88,7 @@ ProductARPage.tsx
 - 完整的 A-Frame scene 定義
 - 包含 scanning overlay、a-assets、a-camera、a-entity (target)
 - 所有 3D model、video、button 都在這裡定義
-- 路徑指向 `/assets/ar-v3/`
+- 路徑指向 `/assets/web-ar/`
 
 ### `styles.css`
 - Scanning overlay 的樣式（corner brackets、scanline animation）
