@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router'
 import { ROUTES } from '@/config/routes'
-import { MindARScene } from '../features/ar/MindARScene'
+import { MindARScene } from '../features/ar/scanner/MindARScene'
 
 type ArStatus = 'initializing' | 'scanning' | 'tracking' | 'lost' | 'error'
 
@@ -16,7 +16,7 @@ export function ArScanner() {
         onReady={() => setStatus('scanning')}
         onTargetFound={() => setStatus('tracking')}
         onTargetLost={() => setStatus('lost')}
-        onError={(err) => { setStatus('error'); setError(err instanceof Error ? err.message : String(err)) }}
+        onError={(err: unknown) => { setStatus('error'); setError(err instanceof Error ? err.message : String(err)) }}
         navigate={navigate}
       />
 
