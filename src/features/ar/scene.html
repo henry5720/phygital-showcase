@@ -6,16 +6,11 @@
 </div>
 
 <!-- environment="preset: tron; active: false" -->
-<a-scene
-  loading-screen="enabled: false"
+<a-scene loading-screen="enabled: false"
   mindar-image="imageTargetSrc: /assets/web-ar/card.mind; showStats: false; uiScanning: #ar-v5-scanning-overlay; filterMinCF:0.0001; filterBeta: 0.001;"
-  color-space="sRGB"
-  renderer="colorManagement: true"
-  vr-mode-ui="enabled: false"
-  device-orientation-permission-ui="enabled: false"
-  hdr-environment="src: /assets/web-ar/env.hdr"
-  reflection
->
+   color-space="sRGB" renderer="colorManagement: true; toneMapping: ACESFilmic" vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false" hdr-environment="src: /assets/web-ar/env.hdr"
+  reflection>
   <a-assets>
     <!-- <img id="card" src="/assets/web-ar/card.png" /> -->
     <img id="icon-web" src="/assets/web-ar/icons/web.png" />
@@ -24,38 +19,18 @@
     <img id="icon-location" src="/assets/web-ar/icons/location.png" />
     <img id="icon-left" src="/assets/web-ar/icons/left.png" />
     <img id="icon-right" src="/assets/web-ar/icons/right.png" />
-    <img
-      id="paintandquest-preview"
-      src="/assets/web-ar/portfolio/paintandquest-preview.png"
-    />
-    <video
-      id="paintandquest-video-mp4"
-      loop="true"
-      playsinline
-      webkit-playsinline
-      src="/assets/web-ar/portfolio/paintandquest.mp4"
-    ></video>
-    <video
-      id="paintandquest-video-webm"
-      loop="true"
-      playsinline
-      webkit-playsinline
-      src="/assets/web-ar/portfolio/paintandquest.webm"
-    ></video>
-    <img
-      id="coffeemachine-preview"
-      src="/assets/web-ar/portfolio/coffeemachine-preview.png"
-    />
+    <img id="paintandquest-preview" src="/assets/web-ar/portfolio/paintandquest-preview.png" />
+    <video id="paintandquest-video-mp4" loop="true" playsinline webkit-playsinline
+      src="/assets/web-ar/portfolio/paintandquest.mp4"></video>
+    <video id="paintandquest-video-webm" loop="true" playsinline webkit-playsinline
+      src="/assets/web-ar/portfolio/paintandquest.webm"></video>
+    <img id="coffeemachine-preview" src="/assets/web-ar/portfolio/coffeemachine-preview.png" />
     <img id="peak-preview" src="/assets/web-ar/portfolio/peak-preview.png" />
     <a-asset-item id="avatarModel" src="/assets/web-ar/fizzt.glb"></a-asset-item>
   </a-assets>
 
-  <a-camera
-    position="0 0 0"
-    look-controls="enabled: false"
-    cursor="fuse: false; rayOrigin: mouse;"
-    raycaster="far: 10000; objects: .clickable"
-  ></a-camera>
+  <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;"
+    raycaster="far: 10000; objects: .clickable"></a-camera>
 
   <a-entity id="ar-v5-target" mindar-image-target="targetIndex: 0">
     <!-- <a-plane
@@ -133,16 +108,9 @@
       ></a-image>
     </a-entity> -->
 
-    <a-gltf-model
-      id="avatar"
-      rotation="0 0 0"
-      position="0 -0.25 -0.3"
-      scale="3 3 3"
-      src="#avatarModel"
-    ></a-gltf-model>
-    
-
-    <!-- <a-image
+      <!-- <a-gltf-model id="avatar" scale="3 3 3" src="#avatarModel" gltf-model="/assets/web-ar/fizzt.glb"></a-gltf-model> -->
+      <a-entity scale="3 3 3" gltf-model="/assets/web-ar/fizzt.glb" visible=""></a-entity>
+      <!-- <a-image
       visible="false"
       id="profile-button"
       class="clickable"
@@ -195,5 +163,6 @@
       geometry="primitive:plane; height: 0.1; width: 2;"
       material="opacity: 0.5"
     ></a-text> -->
-  </a-entity>
+    </a-entity>
 </a-scene>
+

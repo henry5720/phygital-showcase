@@ -4,7 +4,7 @@ export const brandConfig = {
   heroImage: "/assets/hero.png",
   logoMindFile: "/assets/fizzt/targets.mind",
   ar: {
-    model: "/assets/fizzt/fizzt.glb",
+    model: "/assets/web-ar/fizzt.glb",
     videos: {
       stageA: "/assets/fizzt/video-stage-a.mp4",
       stageB: "/assets/fizzt/video-stage-b.mp4",
