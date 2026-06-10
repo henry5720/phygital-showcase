@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import sceneHtml from '@/features/ar/scene-viewer.html?raw'
+import sceneHtml from '@/features/ar/scene.html?raw'
 import sceneCss from '@/features/ar/styles.css?raw'
 
 type AFrameWindow = Window & typeof globalThis & {
@@ -15,10 +15,6 @@ function getAFrameWindow(): AFrameWindow {
 
 function isAframeReady() {
   return typeof getAFrameWindow().AFRAME !== 'undefined'
-}
-
-function isEnvironmentReady() {
-  return Boolean(getAFrameWindow().AFRAME?.components?.['environment'])
 }
 
 function loadScript(src: string, isReady: () => boolean): Promise<void> {
@@ -97,7 +93,6 @@ export function ModelViewer() {
 
     async function init() {
       await loadScript('https://aframe.io/releases/1.7.0/aframe.min.js', isAframeReady)
-      await loadScript('https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js', isEnvironmentReady)
 
       if (cleaned || !container?.isConnected) return
 
