@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import sceneHtml from '@/features/ar/scene.html?raw'
+import sceneHtml from '@/features/ar/scene-viewer.html?raw'
 import sceneCss from '@/features/ar/styles.css?raw'
 
 type AFrameWindow = Window & typeof globalThis & {
@@ -55,15 +55,6 @@ function injectScene(container: HTMLElement): HTMLStyleElement {
   return style
 }
 
-function enableCameraControls(container: HTMLElement) {
-  const camera = container.querySelector('a-camera')
-  if (!camera) return
-
-  camera.setAttribute('position', '0 1.6 3')
-  camera.setAttribute('look-controls', '')
-  camera.setAttribute('wasd-controls', '')
-}
-
 type AFrameSceneElement = HTMLElement & {
   renderer?: { setAnimationLoop?: (callback: null) => void }
   pause?: () => void
@@ -106,7 +97,6 @@ export function ModelViewer() {
       if (cleaned || !container?.isConnected) return
 
       styleEl = injectScene(container)
-      enableCameraControls(container)
     }
 
     container.innerHTML = '<p style="color:#666;padding:1rem">Loading 3D scene...</p>'
