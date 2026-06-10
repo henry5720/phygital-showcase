@@ -1,19 +1,6 @@
 import { render, cleanup } from '@testing-library/react'
 import { MindARScene } from './MindARScene'
 
-vi.mock('../shared/setupRenderer', () => ({
-  setupRenderer: vi.fn(() => ({
-    renderer: {
-      setAnimationLoop: vi.fn(),
-      render: vi.fn(),
-      dispose: vi.fn(),
-      domElement: document.createElement('canvas'),
-      setSize: vi.fn(),
-    },
-    dispose: vi.fn(),
-  })),
-}))
-
 vi.mock('../shared/loadHDR', () => ({
   loadHDR: vi.fn(() => Promise.resolve({})),
 }))

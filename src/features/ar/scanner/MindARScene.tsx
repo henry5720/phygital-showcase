@@ -1,5 +1,4 @@
 import { useEffect, useEffectEvent, useRef } from 'react'
-import { setupRenderer } from '../shared/setupRenderer'
 import { loadHDR } from '../shared/loadHDR'
 import { loadGLB } from '../shared/loadGLB'
 
@@ -28,22 +27,19 @@ export function MindARScene({
     const container = containerRef.current
     if (!container) return
 
-    let cleanupRenderer: (() => void) | null = null
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let mindar: any = null
     let cancelled = false
 
     async function init() {
       const { MindARThree } = await import('mind-ar/dist/mindar-image-three.prod.js')
-      const { renderer, dispose } = setupRenderer(container!, { alpha: true })
-      cleanupRenderer = dispose
 
       mindar = new MindARThree({
         container: container!,
         imageTargetSrc: '/assets/web-ar/card.mind',
       })
 
-      const { scene } = mindar
+      const { scene, renderer, camera } = mindar
       const anchor = mindar.addAnchor(0)
 
       const envMap = await loadHDR('/assets/web-ar/env.hdr', renderer)
@@ -63,7 +59,7 @@ export function MindARScene({
       if (cancelled) return
 
       renderer.setAnimationLoop(() => {
-        renderer.render(scene, mindar!.camera)
+        renderer.render(scene, camera)
       })
 
       handleReady()
@@ -76,7 +72,6 @@ export function MindARScene({
     return () => {
       cancelled = true
       mindar?.stop()
-      cleanupRenderer?.()
     }
   }, [])
 
