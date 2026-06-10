@@ -6,7 +6,10 @@ vi.mock('../shared/loadHDR', () => ({
 }))
 
 vi.mock('../shared/loadGLB', () => ({
-  loadGLB: vi.fn(() => Promise.resolve({})),
+  loadGLB: vi.fn(() => {
+    const mockScale = { set: vi.fn() }
+    return Promise.resolve({ scale: mockScale })
+  }),
 }))
 
 vi.mock('mind-ar/dist/mindar-image-three.prod.js', () => ({
