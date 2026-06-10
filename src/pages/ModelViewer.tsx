@@ -1,102 +1,53 @@
 import { useEffect, useRef } from 'react'
-import sceneHtml from '@/features/ar/scene.html?raw'
-import sceneCss from '@/features/ar/styles.css?raw'
+import 'aframe'
+// @ts-expect-error - three/examples/jsm has no type declarations
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 
-/* global THREE */
+// Register RGBELoader on global THREE for A-Frame components
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const _window = window as any
+if (!_window.THREE) _window.THREE = {}
+_window.THREE.RGBELoader = RGBELoader
 
-declare const THREE: {
-  RGBELoader?: new () => unknown
-  EquirectangularReflectionMapping: unknown
-  ACESFilmicToneMapping: unknown
-  sRGBEncoding: unknown
-}
+// Register hdr-environment component
+_window.AFRAME?.registerComponent('hdr-environment', {
+  schema: {
+    src: { type: 'string' },
+    showBackground: { type: 'boolean', default: false },
+  },
 
-type AFrameWindow = Window & typeof globalThis & {
-  AFRAME?: {
-    components?: Record<string, unknown>
-    registerComponent: (name: string, def: Record<string, unknown>) => void
-  }
-}
+  init() {
+    this.el.addEventListener('loaded', () => this.loadHDR())
+  },
 
-function getAFrameWindow(): AFrameWindow {
-  return window as AFrameWindow
-}
+  loadHDR() {
+    const el = this.el
+    const src = this.data.src
+    const THREE = _window.THREE
 
-function isAframeReady() {
-  return typeof getAFrameWindow().AFRAME !== 'undefined'
-}
+    if (!src || typeof THREE.RGBELoader === 'undefined') return
 
-function isRGBELoaderReady() {
-  return typeof THREE !== 'undefined' && typeof THREE.RGBELoader !== 'undefined'
-}
+    const renderer = el.renderer
+    if (!renderer) return
 
-function isHdrEnvironmentReady() {
-  return Boolean(getAFrameWindow().AFRAME?.components?.['hdr-environment'])
-}
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.outputEncoding = THREE.sRGBEncoding
 
-function loadScript(src: string, isReady: () => boolean): Promise<void> {
-  const existing = document.querySelector(`script[src="${src}"]`)
-  if (existing) {
-    const loaded = existing.getAttribute('data-loaded') === 'true' || isReady()
-    if (loaded) {
-      existing.setAttribute('data-loaded', 'true')
-      return Promise.resolve()
-    }
-    return new Promise<void>((resolve, reject) => {
-      existing.addEventListener('load', () => resolve(), { once: true })
-      existing.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true })
-    })
-  }
-  return new Promise<void>((resolve, reject) => {
-    const script = document.createElement('script')
-    script.src = src
-    script.onload = () => { script.setAttribute('data-loaded', 'true'); resolve() }
-    script.onerror = () => reject(new Error(`Failed to load ${src}`))
-    document.head.appendChild(script)
-  })
-}
-
-function injectScene(container: HTMLElement): HTMLStyleElement {
-  const style = document.createElement('style')
-  style.textContent = sceneCss
-  document.head.appendChild(style)
-
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(sceneHtml, 'text/html')
-  const fragment = document.createDocumentFragment()
-  Array.from(doc.body.childNodes).forEach((node) => {
-    fragment.appendChild(document.importNode(node, true))
-  })
-  container.appendChild(fragment)
-
-  return style
-}
-
-type AFrameSceneElement = HTMLElement & {
-  renderer?: { setAnimationLoop?: (callback: null) => void }
-  pause?: () => void
-}
-
-function destroyScene(container: HTMLElement, style: HTMLStyleElement) {
-  const sceneEl = container.querySelector('a-scene') as AFrameSceneElement | null
-  if (sceneEl) {
-    try { sceneEl.renderer?.setAnimationLoop?.(null) } catch { /* best-effort */ }
-    try { sceneEl.pause?.() } catch { /* best-effort */ }
-  }
-
-  container.querySelectorAll('video').forEach((v) => {
-    const video = v as HTMLVideoElement
-    video.pause()
-    if (video.srcObject instanceof MediaStream) {
-      video.srcObject.getTracks().forEach((track) => track.stop())
-      video.srcObject = null
-    }
-    video.src = ''
-  })
-
-  while (container.firstChild) container.removeChild(container.firstChild)
-  style.remove()
-}
+    const loader = new THREE.RGBELoader()
+    loader.load(
+      src,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (texture: any) => {
+        texture.mapping = THREE.EquirectangularReflectionMapping
+        el.object3D.environment = texture
+        if (this.data.showBackground) el.object3D.background = texture
+      },
+      undefined,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (error: any) => console.error('hdr-environment: Failed to load HDR', error),
+    )
+  },
+})
 
 export function ModelViewer() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -105,37 +56,49 @@ export function ModelViewer() {
     const container = containerRef.current
     if (!container) return
 
-    let styleEl: HTMLStyleElement | null = null
-    let cleaned = false
+    let cancelled = false
 
-    async function init() {
-      await loadScript('https://aframe.io/releases/1.7.0/aframe.min.js', isAframeReady)
-      await loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js', isRGBELoaderReady)
-      await loadScript('/src/features/ar/hdr-environment.js', isHdrEnvironmentReady)
+    try {
+      const sceneEl = document.createElement('a-scene')
+      sceneEl.setAttribute('loading-screen', 'enabled: false')
+      sceneEl.setAttribute('vr-mode-ui', 'enabled: false')
+      sceneEl.setAttribute(
+        'renderer',
+        'colorManagement: true; toneMapping: ACESFilmic',
+      )
+      sceneEl.setAttribute('color-space', 'sRGB')
+      sceneEl.setAttribute(
+        'hdr-environment',
+        'src: /assets/web-ar/env.hdr; showBackground: true',
+      )
+      sceneEl.setAttribute('embedded', '')
+      sceneEl.setAttribute('reflection', '')
 
-      if (cleaned || !container?.isConnected) return
+      const camera = document.createElement('a-entity')
+      camera.setAttribute('camera', 'fov: 50')
+      camera.setAttribute('look-controls', 'enabled: false')
+      camera.setAttribute(
+        'orbit-controls',
+        'target: 0 0 0; minDistance: 1; maxDistance: 10; enableDamping: true',
+      )
+      sceneEl.appendChild(camera)
 
-      styleEl = injectScene(container)
+      const model = document.createElement('a-entity')
+      model.setAttribute('gltf-model', '/assets/web-ar/fizzt.glb')
+      sceneEl.appendChild(model)
 
-      // Enable showBackground for ModelViewer (AR mode keeps it false)
-      const sceneEl = container.querySelector('a-scene')
-      if (sceneEl) {
-        sceneEl.setAttribute('hdr-environment', 'showBackground: true')
+      container.appendChild(sceneEl)
+    } catch (error) {
+      if (!cancelled) {
+        console.error('ModelViewer init failed', error)
+        container.innerHTML =
+          '<p style="color:red;padding:1rem">Failed to load 3D scene</p>'
       }
     }
 
-    container.innerHTML = '<p style="color:#666;padding:1rem">Loading 3D scene...</p>'
-
-    init().catch((err) => {
-      console.error('ModelViewer init failed', err)
-      if (container?.isConnected) {
-        container.innerHTML = '<p style="color:red;padding:1rem">Failed to load 3D scene</p>'
-      }
-    })
-
     return () => {
-      cleaned = true
-      if (styleEl) destroyScene(container, styleEl)
+      cancelled = true
+      container.innerHTML = ''
     }
   }, [])
 
