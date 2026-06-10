@@ -119,11 +119,35 @@ export function MindARScene({
     let mindarSystem: any = null
 
     function cleanup() {
+      // Stop A-Frame scene and render loop
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sceneEl = container?.querySelector('a-scene') as any
+      if (sceneEl) {
+        try { sceneEl.renderer?.setAnimationLoop?.(null) } catch { /* best-effort */ }
+        try { sceneEl.pause?.() } catch { /* best-effort */ }
+      }
+
+      // Stop MindAR system
       if (mindarSystem?.stop) mindarSystem.stop()
-      container?.querySelectorAll('video').forEach((v) => {
+
+      // Cleanup videos and release MediaStream tracks (camera)
+      const cleanupVideo = (v: HTMLVideoElement) => {
         v.pause()
+        if (v.srcObject instanceof MediaStream) {
+          v.srcObject.getTracks().forEach((track) => track.stop())
+          v.srcObject = null
+        }
         v.src = ''
+      }
+      container?.querySelectorAll('video').forEach(cleanupVideo)
+      document.querySelectorAll('video').forEach(cleanupVideo)
+
+      // Remove MindAR UI overlay and injected styles
+      document.querySelectorAll('.mindar-ui-overlay').forEach((el) => el.remove())
+      document.head.querySelectorAll('style').forEach((el) => {
+        if (el.textContent?.includes('mindar-ui-overlay')) el.remove()
       })
+
       if (container) container.innerHTML = ''
     }
 
