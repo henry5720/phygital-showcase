@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
+import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js'
 
 export async function loadHDR(
   url: string,
@@ -9,7 +9,7 @@ export async function loadHDR(
   pmremGenerator.compileEquirectangularShader()
 
   try {
-    const loader = new RGBELoader()
+    const loader = new HDRLoader()
     const texture = await new Promise<THREE.Texture>((resolve, reject) => {
       loader.load(
         url,

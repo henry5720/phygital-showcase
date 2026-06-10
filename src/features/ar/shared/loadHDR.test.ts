@@ -1,7 +1,7 @@
 import { loadHDR } from './loadHDR'
 import * as THREE from 'three'
 
-const { mockEnvMap, mockTexture, pmremGeneratorInstance, rgbeloaderInstance } = vi.hoisted(() => ({
+const { mockEnvMap, mockTexture, pmremGeneratorInstance, hdrloaderInstance } = vi.hoisted(() => ({
   mockEnvMap: {
     mapping: 301,
     colorSpace: 'srgb',
@@ -19,21 +19,21 @@ const { mockEnvMap, mockTexture, pmremGeneratorInstance, rgbeloaderInstance } = 
     fromEquirectangular: vi.fn(() => ({ texture: mockEnvMap })),
     dispose: vi.fn(),
   },
-  rgbeloaderInstance: {
+  hdrloaderInstance: {
     load: vi.fn((_url: string, onLoad: (texture: typeof mockTexture) => void) => {
       onLoad(mockTexture)
     }),
   },
 }))
 
-vi.mock('three/examples/jsm/loaders/RGBELoader.js', () => {
-  class MockRGBELoader {
+vi.mock('three/examples/jsm/loaders/HDRLoader.js', () => {
+  class MockHDRLoader {
     constructor() {
-      return rgbeloaderInstance
+      return hdrloaderInstance
     }
   }
   return {
-    RGBELoader: MockRGBELoader,
+    HDRLoader: MockHDRLoader,
   }
 })
 
@@ -64,7 +64,7 @@ describe('loadHDR', () => {
   })
 
   it('rejects when HDR loading fails', async () => {
-    rgbeloaderInstance.load.mockImplementationOnce(
+    hdrloaderInstance.load.mockImplementationOnce(
       (_url: string, _onLoad: unknown, _onProgress: unknown, onError: (error: Error) => void) => {
         onError(new Error('Load failed'))
       },
