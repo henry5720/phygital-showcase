@@ -23,17 +23,20 @@ export function ModelViewerScene({ onError }: ModelViewerSceneProps) {
 
     let cleanupRenderer: (() => void) | null = null
     let controls: OrbitControls | null = null
+    let renderer: THREE.WebGLRenderer | null = null
+    let camera: THREE.PerspectiveCamera | null = null
     let cancelled = false
 
     async function init() {
       const el = container
       if (!el) return
 
-      const { renderer, dispose } = setupRenderer(el, { alpha: false })
-      cleanupRenderer = dispose
+      const result = setupRenderer(el, { alpha: false })
+      cleanupRenderer = result.dispose
+      renderer = result.renderer
 
       const scene = new THREE.Scene()
-      const camera = new THREE.PerspectiveCamera(
+      camera = new THREE.PerspectiveCamera(
         50,
         el.clientWidth / el.clientHeight,
         0.1,
@@ -67,9 +70,9 @@ export function ModelViewerScene({ onError }: ModelViewerSceneProps) {
 
       renderer.setSize(el.clientWidth, el.clientHeight)
 
-      renderer.setAnimationLoop(() => {
+      renderer!.setAnimationLoop(() => {
         controls?.update()
-        renderer.render(scene, camera)
+        renderer!.render(scene, camera!)
       })
     }
 
@@ -78,12 +81,10 @@ export function ModelViewerScene({ onError }: ModelViewerSceneProps) {
     })
 
     const resizeObserver = new ResizeObserver(() => {
-      if (!container) return
-      const canvas = container.querySelector('canvas')
-      if (canvas) {
-        canvas.width = container.clientWidth
-        canvas.height = container.clientHeight
-      }
+      if (!renderer || !camera) return
+      renderer.setSize(container.clientWidth, container.clientHeight)
+      camera.aspect = container.clientWidth / container.clientHeight
+      camera.updateProjectionMatrix()
     })
     resizeObserver.observe(container)
 

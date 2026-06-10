@@ -25,7 +25,11 @@ export function setupRenderer(
   renderer.setPixelRatio(window.devicePixelRatio)
   renderer.sortObjects = true
 
-  container.appendChild(renderer.domElement)
+  const canvas = renderer.domElement
+  canvas.style.display = 'block'
+  canvas.style.width = '100%'
+  canvas.style.height = '100%'
+  container.appendChild(canvas)
 
   const dispose = () => {
     renderer.setAnimationLoop(null)

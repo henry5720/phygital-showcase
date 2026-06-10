@@ -5,7 +5,7 @@ export function ModelViewer() {
   const [error, setError] = useState<string | null>(null)
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div className="h-dvh bg-background">
       {error ? (
         <div className="flex items-center justify-center h-dvh">
           <p className="text-red-500">Failed to load 3D model: {error}</p>
