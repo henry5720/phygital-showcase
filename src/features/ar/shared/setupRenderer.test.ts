@@ -1,5 +1,4 @@
 import { setupRenderer } from './setupRenderer'
-import * as THREE from 'three'
 
 vi.mock('three', () => {
   class MockWebGLRenderer {
