@@ -7,7 +7,7 @@
  *
  * Best practices:
  * - Waits for scene loaded event before loading HDR
- * - Applies envMap to model materials after model-loaded event
+ * - Applies envMap to ALL meshes in scene (not just current entity)
  * - Supports envMapIntensity for reflection brightness control
  *
  * Requires RGBELoader.js (Three.js r128) to be loaded separately.
@@ -32,7 +32,8 @@ AFRAME.registerComponent('hdr-environment', {
   },
 
   onModelLoaded: function () {
-    this.applyEnvMapToModel();
+    // When new model loads, re-apply envMap to all meshes
+    this.applyEnvMapToAllMeshes();
   },
 
   loadHDR: function () {
@@ -69,8 +70,8 @@ AFRAME.registerComponent('hdr-environment', {
         scene.environment = texture;
         self.envMap = texture;
 
-        // Apply to any existing models
-        self.applyEnvMapToModel();
+        // Apply to ALL meshes in scene immediately
+        self.applyEnvMapToAllMeshes();
 
         // Listen for future model loads
         el.addEventListener('model-loaded', self.onModelLoaded);
@@ -82,15 +83,14 @@ AFRAME.registerComponent('hdr-environment', {
     );
   },
 
-  applyEnvMapToModel: function () {
-    const el = this.el;
-    const model = el.getObject3D('mesh');
+  applyEnvMapToAllMeshes: function () {
+    if (!this.envMap) return;
 
-    if (!model || !this.envMap) return;
-
+    const scene = this.el.object3D;
     const intensity = this.data.envMapIntensity;
 
-    model.traverse(function (node) {
+    // Traverse entire scene to find ALL meshes
+    scene.traverse(function (node) {
       if (node.isMesh && node.material) {
         node.material.envMap = this.envMap;
         node.material.envMapIntensity = intensity;
