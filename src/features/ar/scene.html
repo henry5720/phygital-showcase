@@ -12,6 +12,7 @@
   renderer="colorManagement: true"
   vr-mode-ui="enabled: false"
   device-orientation-permission-ui="enabled: false"
+  environment="preset: tron"
   reflection
 >
   <a-assets>
@@ -45,7 +46,7 @@
       src="/assets/web-ar/portfolio/coffeemachine-preview.png"
     />
     <img id="peak-preview" src="/assets/web-ar/portfolio/peak-preview.png" />
-    <a-asset-item id="avatarModel" src="/assets/fizzt/test.glb"></a-asset-item>
+    <a-asset-item id="avatarModel" src="/assets/web-ar/fizzt.glb"></a-asset-item>
   </a-assets>
 
   <a-camera
@@ -56,16 +57,16 @@
   ></a-camera>
 
   <a-entity id="ar-v5-target" mindar-image-target="targetIndex: 0">
-    <a-plane
+    <!-- <a-plane
       src="#card"
       position="0 0 0"
       height="0.552"
       width="1"
       rotation="0 0 0"
-    ></a-plane>
+    ></a-plane> -->
 
     <a-entity visible="false" id="portfolio-panel" position="0 0 -0.01">
-      <a-text
+      <!-- <a-text
         value="Portfolio"
         color="black"
         align="center"
@@ -129,17 +130,18 @@
         height="0.15"
         width="0.15"
       ></a-image>
-    </a-entity>
+    </a-entity> -->
 
     <a-gltf-model
       id="avatar"
       rotation="0 0 0"
       position="0 -0.25 -0.3"
-      scale="0.004 0.004 0.004"
+      scale="3 3 3"
       src="#avatarModel"
     ></a-gltf-model>
+    
 
-    <a-image
+    <!-- <a-image
       visible="false"
       id="profile-button"
       class="clickable"
@@ -191,6 +193,6 @@
       position="0 -1 0"
       geometry="primitive:plane; height: 0.1; width: 2;"
       material="opacity: 0.5"
-    ></a-text>
+    ></a-text> -->
   </a-entity>
 </a-scene>
