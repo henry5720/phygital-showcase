@@ -2,8 +2,9 @@
 
 /**
  * HDR Environment Component for A-Frame
- * Loads an HDR texture and sets it as scene.environment for PBR reflections.
+ * Loads an HDR or EXR texture and sets it as scene.environment for PBR reflections.
  * Does NOT affect the background (camera feed remains visible in AR).
+ * Automatically selects RGBELoader (.hdr) or EXRLoader (.exr) based on file extension.
  */
 AFRAME.registerComponent('hdr-environment', {
   schema: {
@@ -12,6 +13,13 @@ AFRAME.registerComponent('hdr-environment', {
 
   init: function () {
     this.loadHDR();
+  },
+
+  getLoader: function (src) {
+    if (src.endsWith('.exr')) {
+      return new THREE.EXRLoader();
+    }
+    return new THREE.RGBELoader();
   },
 
   loadHDR: function () {
@@ -33,7 +41,7 @@ AFRAME.registerComponent('hdr-environment', {
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
 
-    const loader = new THREE.RGBELoader();
+    const loader = this.getLoader(src);
     loader.load(
       src,
       function (texture) {
@@ -44,7 +52,7 @@ AFRAME.registerComponent('hdr-environment', {
       },
       undefined,
       function (error) {
-        console.error('hdr-environment: Failed to load HDR', error);
+        console.error('hdr-environment: Failed to load environment map', error);
       }
     );
   },
