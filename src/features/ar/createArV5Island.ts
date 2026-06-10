@@ -22,8 +22,8 @@ function isMindArReady() {
   return Boolean(getArWindow().AFRAME?.components?.['mindar-image'])
 }
 
-function isEnvironmentReady() {
-  return Boolean(getArWindow().AFRAME?.components?.['environment'])
+function isHdrEnvironmentReady() {
+  return Boolean(getArWindow().AFRAME?.components?.['hdr-environment'])
 }
 
 
@@ -51,7 +51,7 @@ function loadScript(src: string, isReady: () => boolean): Promise<void> {
 
 export async function loadArV5Scripts(): Promise<void> {
   await loadScript('https://aframe.io/releases/1.7.0/aframe.min.js', isAframeReady)
-  await loadScript('https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js', isEnvironmentReady)
+  await loadScript('/src/features/ar/hdr-environment.js', isHdrEnvironmentReady)
   await loadScript('https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js', isMindArReady)
 }
 

@@ -17,8 +17,8 @@ function isAframeReady() {
   return typeof getAFrameWindow().AFRAME !== 'undefined'
 }
 
-function isEnvironmentReady() {
-  return Boolean(getAFrameWindow().AFRAME?.components?.['environment'])
+function isHdrEnvironmentReady() {
+  return Boolean(getAFrameWindow().AFRAME?.components?.['hdr-environment'])
 }
 
 function loadScript(src: string, isReady: () => boolean): Promise<void> {
@@ -97,7 +97,7 @@ export function ModelViewer() {
 
     async function init() {
       await loadScript('https://aframe.io/releases/1.7.0/aframe.min.js', isAframeReady)
-      await loadScript('https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js', isEnvironmentReady)
+      await loadScript('/src/features/ar/hdr-environment.js', isHdrEnvironmentReady)
 
       if (cleaned || !container?.isConnected) return
 
