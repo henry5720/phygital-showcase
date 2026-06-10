@@ -51,4 +51,12 @@ export const router = createBrowserRouter([
       return { Component: Product }
     },
   },
+  {
+    path: ROUTES.MODEL_VIEWER,
+    errorElement: <ErrorBoundary />,
+    lazy: async () => {
+      const { ModelViewer } = await import('./pages/ModelViewer')
+      return { Component: ModelViewer }
+    },
+  },
 ])
