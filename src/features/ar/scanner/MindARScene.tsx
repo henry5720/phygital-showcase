@@ -1,5 +1,4 @@
 import { useEffect, useEffectEvent, useRef } from 'react'
-import { MindARThree } from 'mind-ar/dist/mindar-image-three.prod.js'
 import { setupRenderer } from '../shared/setupRenderer'
 import { loadHDR } from '../shared/loadHDR'
 import { loadGLB } from '../shared/loadGLB'
@@ -30,10 +29,12 @@ export function MindARScene({
     if (!container) return
 
     let cleanupRenderer: (() => void) | null = null
-    let mindar: InstanceType<typeof MindARThree> | null = null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let mindar: any = null
     let cancelled = false
 
     async function init() {
+      const { MindARThree } = await import('mind-ar/dist/mindar-image-three.prod.js')
       const { renderer, dispose } = setupRenderer(container!, { alpha: true })
       cleanupRenderer = dispose
 
