@@ -128,7 +128,10 @@ export function ModelViewer() {
       addOrbitControls(container)
     }
 
-    init().catch(() => {
+    container.innerHTML = '<p style="color:#666;padding:1rem">Loading 3D scene...</p>'
+
+    init().catch((err) => {
+      console.error('ModelViewer init failed', err)
       if (container?.isConnected) {
         container.innerHTML = '<p style="color:red;padding:1rem">Failed to load 3D scene</p>'
       }
