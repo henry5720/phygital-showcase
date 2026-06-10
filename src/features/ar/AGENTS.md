@@ -2,43 +2,61 @@
 
 ## 概覽
 
-MindAR + Three.js 的 WebAR 體驗，使用 DOM island 模式。`scene.html` 同時用於 AR 體驗和 ModelViewer 測試頁。
+Three.js + MindAR 的 WebAR 體驗，使用 npm 依賴。AR Scanner 和 ModelViewer 共用 Three.js 渲染管線。
 
 ## 核心檔案
 
+### `shared/` — AR + ModelViewer 共用模組
+
 | 檔案 | 職責 |
 |------|------|
-| `scene.html` | A-Frame 場景 HTML（AR + ModelViewer 共用） |
-| `MindARScene.tsx` | React 與 island 的橋接元件 |
-| `createArV5Island.ts` | 初始化邏輯（MindAR 啟動、A-Frame 場景建立） |
-| `ar-v5-interactions.ts` | 互動邏輯（Raycaster、熱點偵測） |
-| `styles.css` | AR 模組專用樣式 |
+| `setupRenderer.ts` | 建立 WebGLRenderer，設定 tone mapping + color space |
+| `loadHDR.ts` | RGBELoader + PMREMGenerator，載入 HDR 環境貼圖 |
+| `loadGLB.ts` | GLTFLoader，載入 GLB 模型 |
 
-## 測試
+### `scanner/` — AR 掃描功能
 
-| 測試檔 | 測試對象 |
-|--------|----------|
-| `scene.test.ts` | 場景邏輯 |
-| `createArV5Island.test.ts` | 初始化邏輯 |
-| `ar-v5-interactions.test.ts` | 互動邏輯 |
-| `MindARScene.test.tsx` | React 元件 |
+| 檔案 | 職責 |
+|------|------|
+| `MindARScene.tsx` | AR Scanner React component（MindARThree + Three.js） |
+| `styles.css` | Scanning overlay 樣式 |
+
+### `viewer/` — 3D 模型檢視功能
+
+| 檔案 | 職責 |
+|------|------|
+| `ModelViewerScene.tsx` | 3D Model Viewer React component（Three.js + OrbitControls） |
+
+## 依賴
+
+| 套件 | 版本 | 用途 |
+|------|------|------|
+| three | ^0.184 | 3D 渲染引擎 |
+| mind-ar | ^1.2.5 | AR image tracking（Three.js integration） |
+
+## 架構決策
+
+- **全部走 npm** — 不再 CDN 載入 A-Frame 或 Three.js
+- **imperative Three.js** — 不用 R3F，直接操作 Three.js API
+- **共用模組** — loadGLB、loadHDR、setupRenderer 被 scanner 和 viewer 共用
+- **MindARThree** — 使用 MindAR 的 Three.js integration（不是 A-Frame integration）
+- **Phase 2** — 互動邏輯（portfolio、buttons、video）之後處理
 
 ## 素材
 
-- GLB 模型：`public/assets/fizzt/test.glb`（暫時，待替換成正式模型）
+- GLB 模型：`public/assets/web-ar/fizzt.glb`
 - MindAR 特徵檔：`public/assets/web-ar/card.mind`
-- 影片：`public/assets/web-ar/portfolio/`
+- HDR 環境貼圖：`public/assets/web-ar/env.hdr`
 
-## scene.html 設定
+## 測試
 
-- `mindar-image`：MindAR image tracking（AR 模式使用）
-- `reflection`：PBR 材質反射（AR 和 ModelViewer 都用）
-- model scale：`1 1 1`（在 Blender 調整模型大小，A-Frame 不縮放）
-- model position：`0 0 0`（在 Blender 調整模型位置）
+- vitest + jsdom + @testing-library/react
+- Mock strategy：mock `three`、`mind-ar`、`../shared/*`
+- Lifecycle tests：mount → init, unmount → cleanup
 
 ## 注意事項
 
-- AR 模組使用 DOM island 模式，`scene.html` 是獨立的 HTML 文件
-- MindAR 需要相機權限，`ArScanner` 會處理使用者授權流程
-- ModelViewer（`/3d-model`）共用 `scene.html`，但不載入 MindAR
-- 調整 model 位置/大小在 Blender 進行，A-Frame 維持 `scale="1 1 1"`
+- Scanner 使用 `alpha: true`（相機穿透）
+- ModelViewer 使用 `alpha: false`（不透明背景）
+- ModelViewer 顯示 HDR 為背景，Scanner 不顯示
+- `MindARScene.tsx` 的 props 介面保持與舊版相同，ArScanner.tsx 頁面不需要改動
