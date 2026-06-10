@@ -17,10 +17,6 @@ function isAframeReady() {
   return typeof getAFrameWindow().AFRAME !== 'undefined'
 }
 
-function isOrbitControlsReady() {
-  return Boolean(getAFrameWindow().AFRAME?.components?.['orbit-controls'])
-}
-
 function loadScript(src: string, isReady: () => boolean): Promise<void> {
   const existing = document.querySelector(`script[src="${src}"]`)
   if (existing) {
@@ -59,27 +55,13 @@ function injectScene(container: HTMLElement): HTMLStyleElement {
   return style
 }
 
-function addOrbitControls(sceneHtmlEl: Element) {
-  const target = sceneHtmlEl.querySelector('#ar-v5-target')
-  if (!target) return
+function enableCameraControls(container: HTMLElement) {
+  const camera = container.querySelector('a-camera')
+  if (!camera) return
 
-  const camera = sceneHtmlEl.querySelector('a-camera')
-  if (camera) {
-    camera.setAttribute('position', '0 1.6 3')
-    camera.setAttribute('look-controls', 'enabled: false')
-  }
-
-  const orbitEntity = document.createElement('a-entity')
-  orbitEntity.setAttribute('orbit-controls', `
-    target: 0 0 0;
-    minDistance: 0.5;
-    maxDistance: 10;
-    rotateSpeed: 0.5;
-    zoomSpeed: 1.2;
-    enabled: true;
-  `)
-  orbitEntity.setAttribute('position', '0 1.6 3')
-  sceneHtmlEl.appendChild(orbitEntity)
+  camera.setAttribute('position', '0 1.6 3')
+  camera.setAttribute('look-controls', '')
+  camera.setAttribute('wasd-controls', '')
 }
 
 type AFrameSceneElement = HTMLElement & {
@@ -120,12 +102,11 @@ export function ModelViewer() {
 
     async function init() {
       await loadScript('https://aframe.io/releases/1.5.0/aframe.min.js', isAframeReady)
-      await loadScript('https://unpkg.com/aframe-orbit-controls-component@1.0.0/dist/aframe-orbit-controls-component.min.js', isOrbitControlsReady)
 
       if (cleaned || !container?.isConnected) return
 
       styleEl = injectScene(container)
-      addOrbitControls(container)
+      enableCameraControls(container)
     }
 
     container.innerHTML = '<p style="color:#666;padding:1rem">Loading 3D scene...</p>'
