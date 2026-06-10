@@ -120,7 +120,7 @@ export function ModelViewer() {
 
     async function init() {
       await loadScript('https://aframe.io/releases/1.5.0/aframe.min.js', isAframeReady)
-      await loadScript('https://cdn.jsdelivr.net/npm/aframe-orbit-controls-component@1.0.1/dist/aframe-orbit-controls-component.min.js', isOrbitControlsReady)
+      await loadScript('https://raw.githubusercontent.com/subsumo/aframe-orbit-controls/master/dist/aframe-orbit-controls-component.min.js', isOrbitControlsReady)
 
       if (cleaned || !container?.isConnected) return
 
