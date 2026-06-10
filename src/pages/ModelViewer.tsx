@@ -17,6 +17,10 @@ function isAframeReady() {
   return typeof getAFrameWindow().AFRAME !== 'undefined'
 }
 
+function isEnvironmentReady() {
+  return Boolean(getAFrameWindow().AFRAME?.components?.['environment'])
+}
+
 function loadScript(src: string, isReady: () => boolean): Promise<void> {
   const existing = document.querySelector(`script[src="${src}"]`)
   if (existing) {
@@ -92,7 +96,8 @@ export function ModelViewer() {
     let cleaned = false
 
     async function init() {
-      await loadScript('https://aframe.io/releases/1.5.0/aframe.min.js', isAframeReady)
+      await loadScript('https://aframe.io/releases/1.7.0/aframe.min.js', isAframeReady)
+      await loadScript('https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js', isEnvironmentReady)
 
       if (cleaned || !container?.isConnected) return
 
