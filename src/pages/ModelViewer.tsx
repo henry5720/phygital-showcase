@@ -116,6 +116,12 @@ export function ModelViewer() {
       if (cleaned || !container?.isConnected) return
 
       styleEl = injectScene(container)
+
+      // Enable showBackground for ModelViewer (AR mode keeps it false)
+      const sceneEl = container.querySelector('a-scene')
+      if (sceneEl) {
+        sceneEl.setAttribute('hdr-environment', 'showBackground: true')
+      }
     }
 
     container.innerHTML = '<p style="color:#666;padding:1rem">Loading 3D scene...</p>'
