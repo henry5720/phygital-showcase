@@ -2,6 +2,15 @@ import { useEffect, useRef } from 'react'
 import sceneHtml from '@/features/ar/scene.html?raw'
 import sceneCss from '@/features/ar/styles.css?raw'
 
+/* global THREE */
+
+declare const THREE: {
+  RGBELoader?: new () => unknown
+  EquirectangularReflectionMapping: unknown
+  ACESFilmicToneMapping: unknown
+  sRGBEncoding: unknown
+}
+
 type AFrameWindow = Window & typeof globalThis & {
   AFRAME?: {
     components?: Record<string, unknown>
@@ -15,6 +24,10 @@ function getAFrameWindow(): AFrameWindow {
 
 function isAframeReady() {
   return typeof getAFrameWindow().AFRAME !== 'undefined'
+}
+
+function isRGBELoaderReady() {
+  return typeof THREE !== 'undefined' && typeof THREE.RGBELoader !== 'undefined'
 }
 
 function isHdrEnvironmentReady() {
@@ -97,6 +110,7 @@ export function ModelViewer() {
 
     async function init() {
       await loadScript('https://aframe.io/releases/1.7.0/aframe.min.js', isAframeReady)
+      await loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js', isRGBELoaderReady)
       await loadScript('/src/features/ar/hdr-environment.js', isHdrEnvironmentReady)
 
       if (cleaned || !container?.isConnected) return

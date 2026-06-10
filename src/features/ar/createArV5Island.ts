@@ -10,6 +10,10 @@ type ArWindow = Window & typeof globalThis & {
   }
 }
 
+declare const THREE: {
+  RGBELoader?: new () => unknown
+}
+
 function getArWindow(): ArWindow {
   return window as ArWindow
 }
@@ -20,6 +24,10 @@ function isAframeReady() {
 
 function isMindArReady() {
   return Boolean(getArWindow().AFRAME?.components?.['mindar-image'])
+}
+
+function isRGBELoaderReady() {
+  return typeof THREE !== 'undefined' && typeof THREE.RGBELoader !== 'undefined'
 }
 
 function isHdrEnvironmentReady() {
@@ -51,6 +59,7 @@ function loadScript(src: string, isReady: () => boolean): Promise<void> {
 
 export async function loadArV5Scripts(): Promise<void> {
   await loadScript('https://aframe.io/releases/1.7.0/aframe.min.js', isAframeReady)
+  await loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js', isRGBELoaderReady)
   await loadScript('/src/features/ar/hdr-environment.js', isHdrEnvironmentReady)
   await loadScript('https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js', isMindArReady)
 }

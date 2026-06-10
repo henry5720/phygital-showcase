@@ -2,9 +2,11 @@
 
 /**
  * HDR Environment Component for A-Frame
- * Loads an HDR or EXR texture and sets it as scene.environment for PBR reflections.
+ * Loads an HDR texture and sets it as scene.environment for PBR reflections.
  * Does NOT affect the background (camera feed remains visible in AR).
- * Automatically selects RGBELoader (.hdr) or EXRLoader (.exr) based on file extension.
+ *
+ * Requires RGBELoader.js (Three.js r128) to be loaded separately.
+ * Usage: <a-scene hdr-environment="src: /assets/web-ar/env.hdr">
  */
 AFRAME.registerComponent('hdr-environment', {
   schema: {
@@ -15,20 +17,17 @@ AFRAME.registerComponent('hdr-environment', {
     this.loadHDR();
   },
 
-  getLoader: function (src) {
-    if (src.endsWith('.exr')) {
-      return new THREE.EXRLoader();
-    }
-    return new THREE.RGBELoader();
-  },
-
   loadHDR: function () {
-    const self = this;
     const el = this.el;
     const src = this.data.src;
 
     if (!src) {
       console.warn('hdr-environment: No src provided');
+      return;
+    }
+
+    if (typeof THREE.RGBELoader === 'undefined') {
+      console.error('hdr-environment: RGBELoader not loaded. Include RGBELoader.js script.');
       return;
     }
 
@@ -38,21 +37,21 @@ AFRAME.registerComponent('hdr-environment', {
       return;
     }
 
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    pmremGenerator.compileEquirectangularShader();
+    const scene = el.object3D;
 
-    const loader = this.getLoader(src);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+
+    const loader = new THREE.RGBELoader();
     loader.load(
       src,
       function (texture) {
-        const envMap = pmremGenerator.fromEquirectangular(texture).texture;
-        el.object3D.environment = envMap;
-        texture.dispose();
-        pmremGenerator.dispose();
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        scene.environment = texture;
       },
       undefined,
       function (error) {
-        console.error('hdr-environment: Failed to load environment map', error);
+        console.error('hdr-environment: Failed to load HDR', error);
       }
     );
   },
