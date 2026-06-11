@@ -8,9 +8,8 @@
 <!-- environment="preset: tron; active: false" -->
 <a-scene loading-screen="enabled: false"
   mindar-image="imageTargetSrc: /assets/web-ar/card.mind; showStats: false; uiScanning: #ar-v5-scanning-overlay; filterMinCF:0.0001; filterBeta: 0.001;"
-   color-space="sRGB" renderer="colorManagement: true; toneMapping: ACESFilmic" vr-mode-ui="enabled: false"
-  device-orientation-permission-ui="enabled: false" hdr-environment="src: /assets/web-ar/env.hdr"
-  reflection>
+  color-space="sRGB" renderer="colorManagement: true; toneMapping: ACESFilmic" vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false" hdr-environment="src: /assets/web-ar/env.hdr" reflection>
   <a-assets>
     <!-- <img id="card" src="/assets/web-ar/card.png" /> -->
     <img id="icon-web" src="/assets/web-ar/icons/web.png" />
@@ -107,9 +106,10 @@
         width="0.15"
       ></a-image>
     </a-entity> -->
-
+      <a-plane src="/assets/web-ar/圖層 1 拷貝＿擴大.png" material="transparent: true; alphaTest: 0.5"></a-plane>
       <!-- <a-gltf-model id="avatar" scale="3 3 3" src="#avatarModel" gltf-model="/assets/web-ar/fizzt.glb"></a-gltf-model> -->
-      <a-entity scale="3 3 3" gltf-model="/assets/web-ar/fizzt.glb" visible=""></a-entity>
+      <a-entity scale="3 3 3" gltf-model="/assets/web-ar/fizzt.glb" material="transparent: true; alphaTest: 0.5;"
+        visible=""></a-entity>
       <!-- <a-image
       visible="false"
       id="profile-button"
@@ -165,4 +165,3 @@
     ></a-text> -->
     </a-entity>
 </a-scene>
-

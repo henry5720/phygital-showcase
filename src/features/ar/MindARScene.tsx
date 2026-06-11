@@ -201,9 +201,6 @@ export function MindARScene({
         cursor="fuse: false; rayOrigin: mouse"
         raycaster="far: 10000; objects: .clickable"
       />
-
-      <a-plane src="/assets/web-ar/圖層 1 拷貝＿擴大.png" />
-
       <a-entity mindar-image-target="targetIndex: 0">
         <a-entity
           scale="3 3 3"
