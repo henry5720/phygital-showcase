@@ -30,7 +30,7 @@ export function ArScanner() {
           </Link>
           <div className="text-right">
             <h1 className="text-xl font-bold tracking-tight">產品 AR</h1>
-            <p className="text-xs opacity-50">DOM Island</p>
+            <p className="text-xs opacity-50">AR Experience</p>
           </div>
         </div>
 

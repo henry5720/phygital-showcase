@@ -103,7 +103,8 @@ export function MindARScene({
   onTargetLost,
   onError,
 }: MindARSceneProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sceneRef = useRef<any>(null)
 
   const handleReady = useEffectEvent(() => onReady?.())
   const handleTargetFound = useEffectEvent(() => onTargetFound?.())
@@ -111,8 +112,8 @@ export function MindARScene({
   const handleError = useEffectEvent((error: unknown) => onError?.(error))
 
   useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
+    const sceneEl = sceneRef.current
+    if (!sceneEl) return
 
     let cancelled = false
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -120,8 +121,6 @@ export function MindARScene({
 
     function cleanup() {
       // Stop A-Frame scene and render loop
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const sceneEl = container?.querySelector('a-scene') as any
       if (sceneEl) {
         try { sceneEl.renderer?.setAnimationLoop?.(null) } catch { /* best-effort */ }
         try { sceneEl.pause?.() } catch { /* best-effort */ }
@@ -139,7 +138,6 @@ export function MindARScene({
         }
         v.src = ''
       }
-      container?.querySelectorAll('video').forEach(cleanupVideo)
       document.querySelectorAll('video').forEach(cleanupVideo)
 
       // Remove MindAR UI overlay and injected styles
@@ -147,48 +145,9 @@ export function MindARScene({
       document.head.querySelectorAll('style').forEach((el) => {
         if (el.textContent?.includes('mindar-ui-overlay')) el.remove()
       })
-
-      if (container) container.innerHTML = ''
     }
 
     try {
-      const sceneEl = document.createElement('a-scene')
-      sceneEl.setAttribute('loading-screen', 'enabled: false')
-      sceneEl.setAttribute(
-        'mindar-image',
-        'imageTargetSrc: /assets/web-ar/card.mind; showStats: false; filterMinCF: 0.0001; filterBeta: 0.001',
-      )
-      sceneEl.setAttribute('color-space', 'sRGB')
-      sceneEl.setAttribute(
-        'renderer',
-        'colorManagement: true; toneMapping: ACESFilmic',
-      )
-      sceneEl.setAttribute('vr-mode-ui', 'enabled: false')
-      sceneEl.setAttribute('device-orientation-permission-ui', 'enabled: false')
-      sceneEl.setAttribute(
-        'hdr-environment',
-        'src: /assets/web-ar/env.hdr; showBackground: false',
-      )
-      sceneEl.setAttribute('reflection', '')
-
-      const camera = document.createElement('a-camera')
-      camera.setAttribute('position', '0 0 0')
-      camera.setAttribute('look-controls', 'enabled: false')
-      camera.setAttribute('cursor', 'fuse: false; rayOrigin: mouse')
-      camera.setAttribute('raycaster', 'far: 10000; objects: .clickable')
-      sceneEl.appendChild(camera)
-
-      const target = document.createElement('a-entity')
-      target.setAttribute('mindar-image-target', 'targetIndex: 0')
-
-      const model = document.createElement('a-entity')
-      model.setAttribute('scale', '3 3 3')
-      model.setAttribute('gltf-model', '/assets/web-ar/fizzt.glb')
-      target.appendChild(model)
-
-      sceneEl.appendChild(target)
-      container.appendChild(sceneEl)
-
       const onLoaded = () => {
         if (cancelled) return
 
@@ -196,10 +155,10 @@ export function MindARScene({
         mindarSystem = (sceneEl as any).systems?.['mindar-image-system']
         if (mindarSystem?.start) mindarSystem.start()
 
-        target.addEventListener('targetFound', () => {
+        sceneEl.addEventListener('targetFound', () => {
           if (!cancelled) handleTargetFound()
         })
-        target.addEventListener('targetLost', () => {
+        sceneEl.addEventListener('targetLost', () => {
           if (!cancelled) handleTargetLost()
         })
 
@@ -223,5 +182,35 @@ export function MindARScene({
     }
   }, [])
 
-  return <div ref={containerRef} className="absolute inset-0 z-0 ar-container" />
+  return (
+    <a-scene
+      ref={sceneRef}
+      loading-screen="enabled: false"
+      mindar-image="imageTargetSrc: /assets/web-ar/card.mind; showStats: false; filterMinCF: 0.0001; filterBeta: 0.001"
+      color-space="sRGB"
+      renderer="colorManagement: true; toneMapping: ACESFilmic"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
+      hdr-environment="src: /assets/web-ar/env.hdr; showBackground: false"
+      reflection=""
+      className="absolute inset-0 z-0"
+    >
+      <a-camera
+        position="0 0 0"
+        look-controls="enabled: false"
+        cursor="fuse: false; rayOrigin: mouse"
+        raycaster="far: 10000; objects: .clickable"
+      />
+
+      <a-plane src="/assets/web-ar/圖層 1 拷貝＿擴大.png" />
+
+      <a-entity mindar-image-target="targetIndex: 0">
+        <a-entity
+          scale="3 3 3"
+          gltf-model="/assets/web-ar/fizzt.glb"
+          material="transparent: true; alphaTest: 0.5"
+        />
+      </a-entity>
+    </a-scene>
+  )
 }

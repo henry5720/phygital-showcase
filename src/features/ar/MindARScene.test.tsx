@@ -12,14 +12,21 @@ describe('MindARScene', () => {
     cleanup()
   })
 
-  it('renders a container div', () => {
+  it('renders an a-scene element', () => {
     const { container } = render(<MindARScene />)
-    expect(container.querySelector('.absolute.inset-0')).not.toBeNull()
+    expect(container.querySelector('a-scene')).not.toBeNull()
   })
 
-  it('renders with ar-container class', () => {
+  it('sets mindar-image attribute on scene', () => {
     const { container } = render(<MindARScene />)
-    expect(container.querySelector('.ar-container')).not.toBeNull()
+    const scene = container.querySelector('a-scene')
+    expect(scene?.getAttribute('mindar-image')).toContain('card.mind')
+  })
+
+  it('sets hdr-environment attribute on scene', () => {
+    const { container } = render(<MindARScene />)
+    const scene = container.querySelector('a-scene')
+    expect(scene?.getAttribute('hdr-environment')).toContain('env.hdr')
   })
 
   it('accepts callback props without errors', () => {
